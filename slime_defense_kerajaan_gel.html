@@ -1,0 +1,4893 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Slime Defense: Kerajaan Gel — Developer: Ilham</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --font-display: 'Fredoka', cursive, sans-serif;
+      --font-body: 'Nunito', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-body);
+      background: radial-gradient(circle at top, #173628 0%, #091310 100%);
+      color: #f8fafc;
+      overflow: hidden;
+      height: 100dvh;
+      width: 100vw;
+    }
+
+    h1, h2, h3, .font-display {
+      font-family: var(--font-display);
+    }
+
+    /* Juicy 3D Tactile Buttons */
+    .btn-juicy {
+      transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease, box-shadow 0.12s ease;
+      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.38), 0 6px 14px rgba(0, 0, 0, 0.25);
+    }
+    .btn-juicy:hover:not(:disabled) {
+      transform: translateY(-2px) scale(1.02);
+      filter: brightness(1.08);
+    }
+    .btn-juicy:active:not(:disabled) {
+      transform: translateY(3px) scale(0.97);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.38), 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .btn-juicy:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+
+    /* Tower Card Selection */
+    .tower-card {
+      transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .tower-card:hover {
+      transform: translateY(-3px);
+    }
+    .tower-card.selected {
+      transform: translateY(-5px) scale(1.04);
+      border-color: #fde047;
+      box-shadow: 0 0 0 3px rgba(253, 224, 71, 0.35), 0 10px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    /* Map Card Hover */
+    .map-card {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .map-card:hover {
+      transform: translateY(-4px);
+    }
+    .map-card.active {
+      border-color: #4ade80;
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.35), 0 14px 28px rgba(0, 0, 0, 0.5);
+      transform: translateY(-4px) scale(1.02);
+    }
+
+    /* Buff Card Hover */
+    .buff-card {
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+    }
+    .buff-card:hover {
+      transform: translateY(-8px) scale(1.03);
+    }
+
+    @keyframes slimeBounce {
+      0%, 100% { transform: translateY(0) scale(1.04, 0.95); }
+      45% { transform: translateY(-12px) scale(0.94, 1.07); }
+      75% { transform: translateY(2px) scale(1.08, 0.91); }
+    }
+    .animate-slime {
+      animation: slimeBounce 2.2s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 12px rgba(74, 222, 128, 0.4); }
+      50% { box-shadow: 0 0 26px rgba(74, 222, 128, 0.85); }
+    }
+    .pulse-glow {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.86) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-pop-in {
+      animation: popIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="flex flex-col justify-between">
+
+  <!-- WATERMARK DEVELOPER PERMANEN POJOK KANAN BAWAH -->
+  <div id="dev-watermark" class="fixed bottom-1.5 right-2.5 z-50 pointer-events-none px-2.5 py-0.5 rounded-full bg-slate-950/80 border border-emerald-400/40 backdrop-blur-sm shadow-lg flex items-center gap-1.5">
+    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+    <span class="text-[11px] sm:text-xs font-extrabold tracking-wide text-emerald-200">Developer: Ilham</span>
+  </div>
+
+  <!-- ==================== LAYAR AWAL / PILIH PETA & KOLEKSI MENARA ==================== -->
+  <div id="start-screen" class="fixed inset-0 z-40 flex flex-col items-center p-3 sm:p-5 overflow-y-auto bg-gradient-to-b from-emerald-950/95 via-teal-950/95 to-slate-950/98 backdrop-blur-md">
+    <!-- Decorative floating slime blobs -->
+    <div class="pointer-events-none fixed inset-0 overflow-hidden opacity-20">
+      <div class="absolute top-10 left-10 w-32 h-28 rounded-full bg-emerald-400 blur-xl animate-slime"></div>
+      <div class="absolute bottom-20 right-12 w-40 h-36 rounded-full bg-purple-400 blur-xl animate-slime" style="animation-delay: 0.7s;"></div>
+      <div class="absolute top-1/3 right-1/4 w-28 h-24 rounded-full bg-amber-400 blur-xl animate-slime" style="animation-delay: 1.3s;"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-5xl flex flex-col items-center text-center pb-10">
+      <!-- Top Bar: Title + Slime Essence Wallet -->
+      <div class="w-full flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold tracking-wider uppercase">
+            Edisi Kerajaan Gel v2.0
+          </span>
+        </div>
+
+        <!-- Slime Essence Counter -->
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-purple-950/90 to-fuchsia-950/90 border-2 border-fuchsia-400/50 shadow-lg">
+          <span class="text-lg">🔮</span>
+          <div class="text-left leading-none">
+            <div class="text-[10px] font-extrabold uppercase text-fuchsia-300">Slime Essence</div>
+            <div id="menu-essence-count" class="font-display font-bold text-base sm:text-lg text-white">100</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Logo -->
+      <div class="flex items-center justify-center gap-3 mb-1">
+        <svg class="w-12 h-12 sm:w-14 sm:h-14 animate-slime drop-shadow-lg" viewBox="0 0 100 100">
+          <path d="M15,72 C15,35 32,20 50,20 C68,20 85,35 85,72 C85,86 70,90 50,90 C30,90 15,86 15,72 Z" fill="#4ade80" stroke="#15803d" stroke-width="4"/>
+          <ellipse cx="36" cy="36" rx="10" ry="5" transform="rotate(-25 36 36)" fill="#bbf7d0" opacity="0.8"/>
+          <circle cx="38" cy="56" r="6" fill="#0f172a"/>
+          <circle cx="62" cy="56" r="6" fill="#0f172a"/>
+          <circle cx="36" cy="54" r="2" fill="#ffffff"/>
+          <circle cx="60" cy="54" r="2" fill="#ffffff"/>
+          <path d="M44,65 Q50,72 56,65" fill="none" stroke="#0f172a" stroke-width="3.5" stroke-linecap="round"/>
+          <path d="M50,20 Q48,6 36,8 Q42,18 50,20 Z" fill="#22c55e" stroke="#15803d" stroke-width="2"/>
+          <path d="M50,20 Q56,5 68,10 Q60,19 50,20 Z" fill="#86efac" stroke="#15803d" stroke-width="2"/>
+        </svg>
+        <div class="text-left">
+          <h1 class="text-3xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-lime-200 via-emerald-300 to-teal-500 tracking-tight leading-none">
+            SLIME DEFENSE
+          </h1>
+          <div class="text-sm sm:text-lg font-display font-semibold text-amber-300">
+            Kerajaan Gel • Elemental Burst & Evolusi Menara
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. PILIH PETA PERTEMPURAN -->
+      <div class="w-full text-left mt-3 mb-4">
+        <div class="flex items-center justify-between mb-2 px-1">
+          <h3 class="font-display font-bold text-base sm:text-lg text-emerald-200 flex items-center gap-2">
+            <span>🗺️ 1. Pilih Medan Pertempuran</span>
+          </h3>
+          <span class="text-xs text-slate-400 font-bold">Menang = 100% Hadiah Essence!</span>
+        </div>
+        <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3" id="map-cards-container">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+
+      <!-- Start Action Button -->
+      <div class="my-2">
+        <button id="btn-start-game" class="btn-juicy pulse-glow px-8 py-3 rounded-2xl bg-gradient-to-b from-lime-400 to-emerald-600 border-2 border-lime-200 text-slate-950 font-display font-bold text-lg sm:text-2xl tracking-wide flex items-center gap-3 cursor-pointer">
+          <span>MULAI PERTEMPURAN</span>
+          <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 2. KOLEKSI MENARA SLIME (UNLOCK DENGAN SLIME ESSENCE) -->
+      <div class="w-full text-left mt-3 bg-slate-900/80 border border-slate-700/80 rounded-3xl p-3.5 sm:p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h3 class="font-display font-bold text-base sm:text-lg text-fuchsia-300 flex items-center gap-2">
+              <span>🏰 2. Koleksi & Pembukaan Menara Slime</span>
+              <span id="unlocked-counter-badge" class="px-2 py-0.5 rounded-full bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-200 text-xs font-extrabold">4 / 9 Terbuka</span>
+            </h3>
+            <p class="text-xs text-slate-300">Gunakan <span class="text-fuchsia-300 font-bold">Slime Essence 🔮</span> untuk membuka menara legendaris baru secara permanen!</p>
+          </div>
+        </div>
+
+        <div id="armory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LAYAR UTAMA PERMAINAN ==================== -->
+  <div id="game-screen" class="hidden flex-col h-full w-full justify-between">
+
+    <!-- TOP HUD BAR -->
+    <header class="w-full bg-slate-900/95 border-b border-slate-700/80 px-2 sm:px-3 py-1.5 flex flex-wrap items-center justify-between gap-1.5 z-20 shadow-lg">
+      <!-- Left: Menu & Resource Counters -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <button id="btn-back-menu" title="Kembali ke Menu Utama" class="btn-juicy px-2 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold flex items-center gap-1 cursor-pointer">
+          <span>🗺️</span>
+          <span class="hidden md:inline" id="hud-map-name">Peta</span>
+        </button>
+
+        <!-- Nyawa (Lives) -->
+        <div class="flex items-center gap-1 bg-rose-950/80 border border-rose-500/40 px-2 py-1 rounded-xl">
+          <span class="text-sm sm:text-base">❤️</span>
+          <span id="hud-lives" class="font-display font-bold text-xs sm:text-sm text-rose-200">20</span>
+        </div>
+
+        <!-- Koin (Gold) -->
+        <div class="flex items-center gap-1 bg-amber-950/80 border border-amber-500/40 px-2 py-1 rounded-xl">
+          <span class="text-sm sm:text-base">🪙</span>
+          <span id="hud-gold" class="font-display font-bold text-xs sm:text-sm text-amber-300">180</span>
+        </div>
+
+        <!-- Gelombang (Wave) -->
+        <div class="flex items-center gap-1 bg-indigo-950/80 border border-indigo-500/40 px-2 py-1 rounded-xl">
+          <span class="text-sm sm:text-base">🌊</span>
+          <span id="hud-wave" class="font-display font-bold text-xs sm:text-sm text-indigo-200">1 / 15</span>
+        </div>
+
+        <!-- Skor (Score) -->
+        <div class="hidden sm:flex items-center gap-1 bg-emerald-950/80 border border-emerald-500/40 px-2 py-1 rounded-xl">
+          <span class="text-sm">⭐</span>
+          <span id="hud-score" class="font-display font-bold text-xs sm:text-sm text-emerald-200">0</span>
+        </div>
+
+        <!-- Active Session Buffs Badge -->
+        <div id="hud-buffs-badge" title="Kartu Buff Aktif" class="flex items-center gap-1 bg-purple-950/80 border border-purple-500/40 px-2 py-1 rounded-xl">
+          <span class="text-sm">🃏</span>
+          <span id="hud-buffs-count" class="font-display font-bold text-xs sm:text-sm text-purple-200">0</span>
+        </div>
+      </div>
+
+      <!-- Right: Wave Action & Controls -->
+      <div class="flex items-center gap-1.5">
+        <button id="btn-next-wave" class="btn-juicy px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-b from-amber-400 to-orange-500 border border-amber-200 text-slate-950 font-display font-bold text-xs sm:text-sm flex items-center gap-1 cursor-pointer">
+          <span>⚔️</span>
+          <span id="btn-next-wave-text">Mulai Gel. 1</span>
+        </button>
+
+        <button id="btn-auto-wave" title="Otomatis lanjut gelombang" class="btn-juicy px-2 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-slate-300 font-bold text-xs flex items-center gap-1 cursor-pointer">
+          <span id="auto-wave-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span class="hidden sm:inline">Auto</span>
+        </button>
+
+        <button id="btn-speed" title="Kecepatan Permainan (1x / 2x / Jeda)" class="btn-juicy px-2.5 py-1.5 rounded-xl bg-sky-900/80 border border-sky-500/50 text-sky-200 font-display font-bold text-xs sm:text-sm cursor-pointer">
+          1x
+        </button>
+
+        <button id="btn-mute" title="Suara Efek" class="btn-juicy px-2 py-1.5 rounded-xl bg-slate-800 border border-slate-600 text-slate-200 text-xs sm:text-sm cursor-pointer">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- CENTRAL GAME BOARD AREA -->
+    <main id="canvas-container" class="relative flex-1 w-full flex items-center justify-center overflow-hidden bg-slate-950 p-1">
+      <canvas id="game-canvas" class="rounded-2xl shadow-2xl border-2 border-slate-700/70"></canvas>
+
+      <!-- Wave / Boss Announcement Banner -->
+      <div id="wave-banner" class="pointer-events-none hidden absolute top-3 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-2xl bg-slate-900/95 border-2 border-amber-400/80 shadow-xl text-center">
+        <div id="wave-banner-title" class="font-display font-bold text-sm sm:text-lg text-amber-300">Gelombang 1</div>
+        <div id="wave-banner-sub" class="text-[11px] sm:text-xs text-slate-200 font-semibold">Slime Mini mendekat!</div>
+      </div>
+
+      <!-- Golden Overdrive Active Banner -->
+      <div id="overdrive-badge" class="hidden pointer-events-none absolute top-3 left-3 z-20 px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-300/70 backdrop-blur-sm text-amber-200 font-display font-bold text-xs sm:text-sm flex items-center gap-1.5">
+        <span>👑 Golden Overdrive: +60% SPD</span>
+        <span id="overdrive-timer" class="text-white">8.0s</span>
+      </div>
+
+      <!-- Toast Notification -->
+      <div id="toast-msg" class="pointer-events-none hidden absolute bottom-3 left-1/2 -translate-x-1/2 z-30 px-4 py-1.5 rounded-xl bg-rose-600/95 border border-rose-300 text-white font-bold text-xs sm:text-sm shadow-lg">
+        Koin tidak cukup!
+      </div>
+
+      <!-- TOWER UPGRADE & MANAGEMENT INSPECTOR POPOVER -->
+      <div id="tower-inspector" class="hidden absolute top-2 right-2 sm:top-3 sm:right-3 z-30 w-72 sm:w-80 rounded-2xl bg-slate-900/95 border-2 border-slate-600/90 p-3 shadow-2xl backdrop-blur-md animate-pop-in">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="flex items-center gap-2">
+            <div id="insp-icon" class="w-10 h-10 rounded-xl bg-slate-800 border border-slate-600 flex items-center justify-center text-xl"></div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h3 id="insp-name" class="font-display font-bold text-sm sm:text-base text-white leading-tight">Slime Daun</h3>
+                <span id="insp-level" class="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/50 text-amber-300 text-[11px] font-extrabold">Lv. 1</span>
+              </div>
+              <p id="insp-role" class="text-[11px] text-slate-400 font-semibold">Penembak Cepat</p>
+            </div>
+          </div>
+          <button id="btn-close-inspector" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex items-center justify-center cursor-pointer">✕</button>
+        </div>
+
+        <!-- Stun Warning Banner if stunned -->
+        <div id="insp-stun-alert" class="hidden mb-2 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400/60 text-amber-200 text-xs font-bold text-center">
+          💫 Menara Terkena Stun Bos!
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 gap-1.5 bg-slate-950/75 rounded-xl p-2 border border-slate-800 mb-2 text-xs">
+          <div class="flex flex-col">
+            <span class="text-[10px] text-slate-400">Serangan (DMG)</span>
+            <span id="insp-dmg" class="font-bold text-emerald-300">14</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[10px] text-slate-400">Kecepatan</span>
+            <span id="insp-spd" class="font-bold text-sky-300">1.75/dtk</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[10px] text-slate-400">Jangkauan</span>
+            <span id="insp-rng" class="font-bold text-purple-300">2.7 petak</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="text-[10px] text-slate-400">Eliminasi</span>
+            <span id="insp-kills" class="font-bold text-amber-200">0 slime</span>
+          </div>
+          <div class="col-span-2 pt-1 border-t border-slate-800/80 text-[11px] text-slate-300" id="insp-special">
+            Efek khusus menara.
+          </div>
+        </div>
+
+        <!-- Targeting Priority Toggle -->
+        <div class="flex items-center justify-between bg-slate-800/80 rounded-xl px-2.5 py-1 mb-2 border border-slate-700">
+          <span class="text-xs font-bold text-slate-300">Prioritas Target:</span>
+          <button id="btn-target-mode" class="btn-juicy px-2 py-0.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold cursor-pointer">
+            🎯 Pertama
+          </button>
+        </div>
+
+        <!-- Upgrade & Sell Buttons -->
+        <div class="grid grid-cols-5 gap-1.5">
+          <button id="btn-upgrade-tower" class="col-span-3 btn-juicy py-1.5 px-2 rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-600 border border-emerald-200 text-slate-950 font-display font-bold text-xs flex flex-col items-center justify-center leading-tight cursor-pointer">
+            <span>⬆️ Tingkatkan</span>
+            <span id="insp-upgrade-cost" class="text-[10px] font-extrabold">55 Koin</span>
+          </button>
+          <button id="btn-sell-tower" class="col-span-2 btn-juicy py-1.5 px-2 rounded-xl bg-gradient-to-b from-rose-500 to-rose-700 border border-rose-300 text-white font-display font-bold text-xs flex flex-col items-center justify-center leading-tight cursor-pointer">
+            <span>💰 Jual (75%)</span>
+            <span id="insp-sell-value" class="text-[10px] font-extrabold">+37</span>
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- BOTTOM ACTION BAR: 4 ELEMENTAL BURST SKILLS + UNLOCKED TOWER DOCK -->
+    <footer class="w-full bg-slate-900/95 border-t border-slate-700/80 px-2 sm:px-3 pt-1.5 pb-6 sm:pb-2 z-20">
+      <div class="max-w-6xl mx-auto flex flex-col gap-1.5">
+
+        <!-- Row 1: 4 Elemental Burst Active Skills + Hint -->
+        <div class="flex flex-wrap items-center justify-between gap-1.5">
+          <div id="skills-bar" class="grid grid-cols-4 gap-1.5 sm:gap-2 flex-1 max-w-2xl">
+            <!-- Populated dynamically by JS -->
+          </div>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <span id="dock-hint" class="hidden lg:inline text-xs text-slate-300 font-semibold max-w-xs truncate">
+              Pilih menara slime atau tekan [1-4] untuk Elemental Burst!
+            </span>
+            <button id="btn-cancel-build" class="hidden px-2.5 py-1 rounded-lg bg-rose-600/90 hover:bg-rose-500 text-white font-bold text-xs cursor-pointer">
+              Batal Bangun [ESC]
+            </button>
+          </div>
+        </div>
+
+        <!-- Row 2: Unlocked Slime Towers Dock -->
+        <div id="tower-dock" class="flex items-stretch gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==================== MODAL PEMILIHAN KARTU BUFF ACAK (TIAP SELESAI WAVE) ==================== -->
+  <div id="buff-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="w-full max-w-3xl rounded-3xl bg-gradient-to-b from-slate-800/95 to-slate-950/98 border-2 border-indigo-400/50 p-4 sm:p-6 text-center shadow-2xl animate-pop-in">
+      <span class="px-3 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/50 text-indigo-200 text-xs font-extrabold uppercase tracking-wider">
+        Gelombang Selesai!
+      </span>
+      <h2 class="font-display font-bold text-xl sm:text-3xl text-amber-300 mt-1 mb-1">
+        Pilih Kartu Berkah Kerajaan Gel
+      </h2>
+      <p class="text-xs sm:text-sm text-slate-300 mb-4">
+        Pilih 1 kartu penguat permanen untuk memperkuat pertahananmu di gelombang berikutnya!
+      </p>
+
+      <!-- 3 Random Buff Cards -->
+      <div id="buff-cards-container" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+        <!-- Populated dynamically by JS -->
+      </div>
+
+      <!-- Reroll Button (1x per wave) -->
+      <div class="flex items-center justify-center">
+        <button id="btn-reroll-buffs" class="btn-juicy px-5 py-2 rounded-xl bg-gradient-to-b from-fuchsia-500 to-purple-700 border border-fuchsia-300 text-white font-display font-bold text-sm flex items-center gap-2 cursor-pointer">
+          <span>🎲 Acak Ulang Kartu (1x)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL KEMENANGAN / KEKALAHAN + RINCIAN SLIME ESSENCE ==================== -->
+  <div id="end-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/88 backdrop-blur-md">
+    <div class="w-full max-w-md rounded-3xl bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-slate-600 p-5 sm:p-6 text-center shadow-2xl animate-pop-in">
+      <div id="end-emoji" class="text-5xl mb-1.5">👑</div>
+      <h2 id="end-title" class="font-display font-bold text-2xl sm:text-3xl text-amber-300 mb-1">
+        Kemenangan Kerajaan!
+      </h2>
+      <p id="end-subtitle" class="text-xs sm:text-sm text-slate-300 mb-4">
+        Inti Kristal berhasil dipertahankan dari seluruh gelombang slime!
+      </p>
+
+      <!-- Slime Essence Reward Box -->
+      <div class="rounded-2xl bg-gradient-to-r from-purple-950/90 via-fuchsia-950/90 to-purple-950/90 border-2 border-fuchsia-400/60 p-3 mb-4 shadow-lg">
+        <div class="text-[11px] font-extrabold uppercase tracking-wider text-fuchsia-300">Hadiah Slime Essence</div>
+        <div id="end-essence-earned" class="font-display font-bold text-2xl sm:text-3xl text-white my-0.5">
+          +100 🔮
+        </div>
+        <div id="end-essence-formula" class="text-[11px] text-fuchsia-200/90 font-semibold">
+          100% Hadiah Utama Peta Mudah (Wave 15/15)
+        </div>
+        <div id="end-essence-total" class="mt-1 text-xs font-extrabold text-amber-300">
+          Total Slime Essence: 200 🔮
+        </div>
+      </div>
+
+      <!-- Run Summary Stats -->
+      <div class="grid grid-cols-2 gap-2 bg-slate-950/80 rounded-2xl p-3 border border-slate-700/80 mb-4 text-left">
+        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Gelombang</div>
+          <div id="stat-waves" class="font-display font-bold text-base text-indigo-300">15 / 15</div>
+        </div>
+        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Slime Dikalahkan</div>
+          <div id="stat-kills" class="font-display font-bold text-base text-emerald-300">0</div>
+        </div>
+        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Menara Dibangun</div>
+          <div id="stat-towers" class="font-display font-bold text-base text-sky-300">0</div>
+        </div>
+        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+          <div class="text-[10px] text-slate-400 font-bold uppercase">Skor Akhir</div>
+          <div id="stat-score" class="font-display font-bold text-base text-amber-300">0</div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2">
+        <button id="btn-endless" class="hidden btn-juicy w-full py-2.5 rounded-2xl bg-gradient-to-b from-purple-400 to-indigo-600 border border-purple-200 text-white font-display font-bold text-sm sm:text-base cursor-pointer">
+          ♾️ Lanjut Mode Tanpa Batas
+        </button>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-replay" class="btn-juicy py-2.5 rounded-2xl bg-gradient-to-b from-lime-400 to-emerald-600 border border-lime-200 text-slate-950 font-display font-bold text-sm sm:text-base cursor-pointer">
+            🔄 Main Lagi
+          </button>
+          <button id="btn-modal-maps" class="btn-juicy py-2.5 rounded-2xl bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-display font-bold text-sm sm:text-base cursor-pointer">
+            🗺️ Menu & Koleksi
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * SLIME DEFENSE: KERAJAAN GEL (v2.0)
+     * Developer: Ilham
+     * Fitur: 9 Menara Evolusi (5 Unlockable via Slime Essence), 4 Skill Aktif dengan
+     *        Genshin Elemental Burst Cut-In, Kartu Buff Acak Tiap Gelombang,
+     *        11 Jenis Musuh & Bos Stun Tower / Kebal Freeze, Web Audio API.
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. MESIN SUARA PROSEDURAL (WEB AUDIO API)
+    // ----------------------------------------------------------------------------
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+
+      unlock() {
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            this.ctx = new AudioCtx();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+      }
+
+      toggleMute() {
+        this.muted = !this.muted;
+        return this.muted;
+      }
+
+      playTone({ type = 'sine', freq = 440, endFreq = null, duration = 0.12, gain = 0.15, delay = 0 }) {
+        if (this.muted) return;
+        this.unlock();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const amp = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (endFreq !== null) {
+          osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+        }
+
+        amp.gain.setValueAtTime(0.001, now);
+        amp.gain.linearRampToValueAtTime(gain, now + 0.012);
+        amp.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        osc.connect(amp);
+        amp.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+      }
+
+      playShoot(towerType) {
+        switch (towerType) {
+          case 'leaf':
+            this.playTone({ type: 'sine', freq: 390, endFreq: 690, duration: 0.07, gain: 0.09 });
+            break;
+          case 'ice':
+            this.playTone({ type: 'triangle', freq: 880, endFreq: 1320, duration: 0.12, gain: 0.09 });
+            break;
+          case 'magma':
+            this.playTone({ type: 'sawtooth', freq: 175, endFreq: 72, duration: 0.18, gain: 0.11 });
+            break;
+          case 'poison':
+            this.playTone({ type: 'sine', freq: 290, endFreq: 520, duration: 0.1, gain: 0.1 });
+            break;
+          case 'lightning':
+            this.playTone({ type: 'sawtooth', freq: 920, endFreq: 210, duration: 0.11, gain: 0.1 });
+            break;
+          case 'sniper':
+            this.playTone({ type: 'triangle', freq: 1200, endFreq: 260, duration: 0.14, gain: 0.13 });
+            break;
+          case 'void':
+            this.playTone({ type: 'sine', freq: 220, endFreq: 90, duration: 0.22, gain: 0.12 });
+            break;
+          case 'alchemist':
+            this.playTone({ type: 'sine', freq: 780, endFreq: 1180, duration: 0.1, gain: 0.09 });
+            break;
+          case 'cosmic':
+            this.playTone({ type: 'sine', freq: 620, endFreq: 660, duration: 0.08, gain: 0.05 });
+            break;
+        }
+      }
+
+      playGenshinBurst(skillId) {
+        // Dramatic anime elemental burst whoosh + crystal chime + sub bass impact
+        this.playTone({ type: 'sawtooth', freq: 130, endFreq: 42, duration: 0.55, gain: 0.24 });
+        this.playTone({ type: 'sine', freq: 260, endFreq: 880, duration: 0.35, gain: 0.18 });
+        const chord = skillId === 'meteor' ? [440, 554.37, 659.25, 880]
+          : skillId === 'freeze' ? [587.33, 739.99, 880, 1174.66]
+          : skillId === 'poisonSwarm' ? [329.63, 415.30, 493.88, 659.25]
+          : [523.25, 659.25, 783.99, 1046.5];
+        chord.forEach((f, idx) => {
+          this.playTone({ type: 'triangle', freq: f, duration: 0.35, gain: 0.13, delay: 0.08 + idx * 0.045 });
+        });
+      }
+
+      playBossStunSlam() {
+        this.playTone({ type: 'sawtooth', freq: 115, endFreq: 32, duration: 0.45, gain: 0.24 });
+        this.playTone({ type: 'square', freq: 180, endFreq: 65, duration: 0.28, gain: 0.15, delay: 0.05 });
+      }
+
+      playExplosion() {
+        this.playTone({ type: 'sawtooth', freq: 145, endFreq: 38, duration: 0.24, gain: 0.16 });
+      }
+
+      playFreeze() {
+        this.playTone({ type: 'sine', freq: 1180, endFreq: 760, duration: 0.14, gain: 0.08 });
+      }
+
+      playPop(isBoss = false) {
+        if (isBoss) {
+          this.playExplosion();
+          this.playTone({ type: 'triangle', freq: 220, endFreq: 65, duration: 0.45, gain: 0.22 });
+        } else {
+          this.playTone({ type: 'sine', freq: 310, endFreq: 740, duration: 0.09, gain: 0.1 });
+        }
+      }
+
+      playCoin() {
+        this.playTone({ type: 'sine', freq: 987.77, duration: 0.07, gain: 0.08 });
+        this.playTone({ type: 'sine', freq: 1318.51, duration: 0.12, gain: 0.08, delay: 0.05 });
+      }
+
+      playUnlock() {
+        const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+        notes.forEach((n, i) => {
+          this.playTone({ type: 'triangle', freq: n, duration: 0.16, gain: 0.15, delay: i * 0.065 });
+        });
+      }
+
+      playBuild() {
+        this.playTone({ type: 'sine', freq: 240, endFreq: 520, duration: 0.13, gain: 0.14 });
+      }
+
+      playUpgrade() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((n, i) => {
+          this.playTone({ type: 'triangle', freq: n, duration: 0.14, gain: 0.13, delay: i * 0.055 });
+        });
+      }
+
+      playWaveStart(isBossWave = false) {
+        if (isBossWave) {
+          this.playTone({ type: 'sawtooth', freq: 146.83, endFreq: 138.59, duration: 0.45, gain: 0.16 });
+          this.playTone({ type: 'sawtooth', freq: 110.0, duration: 0.55, gain: 0.18, delay: 0.22 });
+        } else {
+          this.playTone({ type: 'triangle', freq: 392.0, duration: 0.15, gain: 0.13 });
+          this.playTone({ type: 'triangle', freq: 523.25, duration: 0.25, gain: 0.14, delay: 0.11 });
+        }
+      }
+
+      playLifeLost() {
+        this.playTone({ type: 'sawtooth', freq: 190, endFreq: 85, duration: 0.26, gain: 0.19 });
+      }
+
+      playVictory() {
+        const melody = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
+        melody.forEach((f, idx) => {
+          this.playTone({ type: 'triangle', freq: f, duration: 0.18, gain: 0.16, delay: idx * 0.11 });
+        });
+      }
+
+      playDefeat() {
+        const melody = [392.0, 349.23, 329.63, 261.63];
+        melody.forEach((f, idx) => {
+          this.playTone({ type: 'sawtooth', freq: f, duration: 0.26, gain: 0.13, delay: idx * 0.18 });
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // ----------------------------------------------------------------------------
+    // 2. PENYIMPANAN PERMANEN (SLIME ESSENCE & MENARA TERKUNCI)
+    // ----------------------------------------------------------------------------
+    const STORAGE_KEY_ESSENCE = 'slime_defense_essence_ilham_v2';
+    const STORAGE_KEY_UNLOCKED = 'slime_defense_unlocked_ilham_v2';
+
+    const DEFAULT_UNLOCKED_TOWERS = ['leaf', 'ice', 'magma', 'poison'];
+
+    class MetaProgression {
+      constructor() {
+        this.essence = 100;
+        this.unlocked = new Set(DEFAULT_UNLOCKED_TOWERS);
+        this.load();
+      }
+
+      load() {
+        try {
+          const savedEssence = localStorage.getItem(STORAGE_KEY_ESSENCE);
+          if (savedEssence !== null && !isNaN(parseInt(savedEssence, 10))) {
+            this.essence = Math.max(0, parseInt(savedEssence, 10));
+          } else {
+            this.essence = 100; // Pemain baru mulai dengan 100 Slime Essence
+          }
+
+          const savedUnlocked = localStorage.getItem(STORAGE_KEY_UNLOCKED);
+          if (savedUnlocked) {
+            const arr = JSON.parse(savedUnlocked);
+            if (Array.isArray(arr)) {
+              this.unlocked = new Set([...DEFAULT_UNLOCKED_TOWERS, ...arr]);
+            }
+          }
+        } catch (e) {
+          this.essence = 100;
+          this.unlocked = new Set(DEFAULT_UNLOCKED_TOWERS);
+        }
+      }
+
+      save() {
+        try {
+          localStorage.setItem(STORAGE_KEY_ESSENCE, String(this.essence));
+          localStorage.setItem(STORAGE_KEY_UNLOCKED, JSON.stringify([...this.unlocked]));
+        } catch (e) {
+          // Ignore storage quota errors
+        }
+      }
+
+      isUnlocked(towerId) {
+        return this.unlocked.has(towerId);
+      }
+
+      unlockTower(towerId, cost) {
+        if (this.unlocked.has(towerId)) return true;
+        if (this.essence < cost) return false;
+        this.essence -= cost;
+        this.unlocked.add(towerId);
+        this.save();
+        return true;
+      }
+
+      addEssence(amount) {
+        this.essence += Math.max(0, Math.round(amount));
+        this.save();
+      }
+    }
+
+    const meta = new MetaProgression();
+
+    // ----------------------------------------------------------------------------
+    // 3. KONFIGURASI DATA: 9 MENARA, 4 SKILL BURST, BUFF CARDS, 11 MUSUH, 3 PETA
+    // ----------------------------------------------------------------------------
+    const GRID_COLS = 16;
+    const GRID_ROWS = 9;
+    const TILE_SIZE = 70;
+    const LOGICAL_W = GRID_COLS * TILE_SIZE; // 1120
+    const LOGICAL_H = GRID_ROWS * TILE_SIZE; // 630
+    const TOTAL_WAVES = 15;
+
+    // 9 Variasi Menara Slime (4 Terbuka Awal + 5 Unlockable dengan Slime Essence)
+    const TOWER_TYPES = {
+      leaf: {
+        id: 'leaf',
+        emoji: '🌿',
+        name: 'Slime Daun',
+        role: 'Penembak Cepat',
+        cost: 50,
+        unlockCost: 0,
+        color: '#22c55e',
+        darkColor: '#15803d',
+        lightColor: '#bbf7d0',
+        projColor: '#4ade80',
+        specialText: 'Tembakan biji gel super cepat. Lv.3 Double Shot, Lv.4 Triple Shot!',
+        levels: [
+          { dmg: 15, fireRate: 1.8, range: 2.75, upgradeCost: 55 },
+          { dmg: 24, fireRate: 2.1, range: 3.0, upgradeCost: 95 },
+          { dmg: 35, fireRate: 2.4, range: 3.25, upgradeCost: 155, multiShot: 2 },
+          { dmg: 50, fireRate: 2.8, range: 3.55, upgradeCost: 0, multiShot: 3 }
+        ]
+      },
+      ice: {
+        id: 'ice',
+        emoji: '❄️',
+        name: 'Slime Es',
+        role: 'Pembeku Area',
+        cost: 80,
+        unlockCost: 0,
+        color: '#38bdf8',
+        darkColor: '#0369a1',
+        lightColor: '#e0f2fe',
+        projColor: '#7dd3fc',
+        specialText: 'Ledakan es memperlambat musuh 42%–60%. Lv.4 membekukan target singkat!',
+        levels: [
+          { dmg: 17, fireRate: 1.05, range: 2.65, splash: 1.1, slowPct: 0.42, slowDur: 2.6, upgradeCost: 75 },
+          { dmg: 27, fireRate: 1.18, range: 2.9, splash: 1.25, slowPct: 0.48, slowDur: 2.9, upgradeCost: 125 },
+          { dmg: 40, fireRate: 1.32, range: 3.15, splash: 1.4, slowPct: 0.54, slowDur: 3.2, upgradeCost: 190 },
+          { dmg: 58, fireRate: 1.48, range: 3.45, splash: 1.6, slowPct: 0.60, slowDur: 3.6, miniFreeze: 1.0, upgradeCost: 0 }
+        ]
+      },
+      magma: {
+        id: 'magma',
+        emoji: '🔥',
+        name: 'Slime Magma',
+        role: 'Artileri Ledakan',
+        cost: 110,
+        unlockCost: 0,
+        color: '#f97316',
+        darkColor: '#9a3412',
+        lightColor: '#fed7aa',
+        projColor: '#fb923c',
+        specialText: 'Bola api parabola dengan ledakan area luas + efek bakar (Burn DoT).',
+        levels: [
+          { dmg: 42, fireRate: 0.74, range: 3.2, splash: 1.4, burnDps: 10, upgradeCost: 95 },
+          { dmg: 68, fireRate: 0.82, range: 3.45, splash: 1.55, burnDps: 18, upgradeCost: 155 },
+          { dmg: 104, fireRate: 0.92, range: 3.75, splash: 1.75, burnDps: 28, upgradeCost: 235 },
+          { dmg: 158, fireRate: 1.05, range: 4.05, splash: 2.0, burnDps: 44, upgradeCost: 0 }
+        ]
+      },
+      poison: {
+        id: 'poison',
+        emoji: '🧪',
+        name: 'Slime Racun',
+        role: 'Korosif & DoT',
+        cost: 95,
+        unlockCost: 0,
+        color: '#a855f7',
+        darkColor: '#6b21a8',
+        lightColor: '#e9d5ff',
+        projColor: '#a3e635',
+        specialText: 'Asam korosif menumpuk racun (DoT) hingga 6 stack & mengikis armor musuh.',
+        levels: [
+          { dmg: 14, fireRate: 1.25, range: 2.8, poisonDps: 16, armorShred: 0.20, upgradeCost: 85 },
+          { dmg: 22, fireRate: 1.4, range: 3.05, poisonDps: 28, armorShred: 0.28, upgradeCost: 140 },
+          { dmg: 32, fireRate: 1.55, range: 3.3, poisonDps: 45, armorShred: 0.36, upgradeCost: 210 },
+          { dmg: 46, fireRate: 1.75, range: 3.55, poisonDps: 68, armorShred: 0.45, upgradeCost: 0 }
+        ]
+      },
+      lightning: {
+        id: 'lightning',
+        emoji: '⚡',
+        name: 'Slime Petir',
+        role: 'Rantai Listrik',
+        cost: 135,
+        unlockCost: 100,
+        color: '#facc15',
+        darkColor: '#a16207',
+        lightColor: '#fef9c3',
+        projColor: '#fde047',
+        specialText: 'Sengatan listrik instan memantul ke 3–6 musuh berdekatan.',
+        levels: [
+          { dmg: 32, fireRate: 1.08, range: 2.95, chains: 3, upgradeCost: 115 },
+          { dmg: 52, fireRate: 1.22, range: 3.2, chains: 4, upgradeCost: 185 },
+          { dmg: 80, fireRate: 1.36, range: 3.45, chains: 5, upgradeCost: 270 },
+          { dmg: 120, fireRate: 1.52, range: 3.75, chains: 6, upgradeCost: 0 }
+        ]
+      },
+      sniper: {
+        id: 'sniper',
+        emoji: '💎',
+        name: 'Slime Sniper Kristal',
+        role: 'Penembak Jitu Kritikal',
+        cost: 150,
+        unlockCost: 150,
+        color: '#ec4899',
+        darkColor: '#9d174d',
+        lightColor: '#fbcfe8',
+        projColor: '#f472b6',
+        specialText: 'Jangkauan super jauh, menembus 75% armor, & peluang Critical Hit tinggi!',
+        levels: [
+          { dmg: 78, fireRate: 0.58, range: 4.8, critChance: 0.30, armorPierce: 0.75, upgradeCost: 130 },
+          { dmg: 125, fireRate: 0.65, range: 5.2, critChance: 0.38, armorPierce: 0.80, upgradeCost: 205 },
+          { dmg: 195, fireRate: 0.72, range: 5.6, critChance: 0.46, armorPierce: 0.85, upgradeCost: 295 },
+          { dmg: 295, fireRate: 0.82, range: 6.2, critChance: 0.55, armorPierce: 0.95, upgradeCost: 0 }
+        ]
+      },
+      void: {
+        id: 'void',
+        emoji: '🌀',
+        name: 'Slime Gravitasi Void',
+        role: 'Pusaran Lubang Hitam',
+        cost: 165,
+        unlockCost: 220,
+        color: '#8b5cf6',
+        darkColor: '#4c1d95',
+        lightColor: '#ddd6fe',
+        projColor: '#a78bfa',
+        specialText: 'Menciptakan pusaran lubang hitam yang menarik mundur musuh & damage area!',
+        levels: [
+          { dmg: 26, fireRate: 0.55, range: 3.1, vortexRadius: 1.45, pullStrength: 42, upgradeCost: 145 },
+          { dmg: 42, fireRate: 0.62, range: 3.35, vortexRadius: 1.65, pullStrength: 54, upgradeCost: 220 },
+          { dmg: 65, fireRate: 0.70, range: 3.6, vortexRadius: 1.85, pullStrength: 66, upgradeCost: 315 },
+          { dmg: 98, fireRate: 0.80, range: 3.9, vortexRadius: 2.1, pullStrength: 80, upgradeCost: 0 }
+        ]
+      },
+      alchemist: {
+        id: 'alchemist',
+        emoji: '👑',
+        name: 'Slime Emas Alkemis',
+        role: 'Koin & Aura Kecepatan',
+        cost: 145,
+        unlockCost: 250,
+        color: '#eab308',
+        darkColor: '#854d0e',
+        lightColor: '#fef08a',
+        projColor: '#fde047',
+        specialText: 'Menghasilkan bonus koin saat menyerang & memberi aura +Attack Speed ke menara sekitar!',
+        levels: [
+          { dmg: 22, fireRate: 1.15, range: 2.8, goldBonus: 3, auraSpd: 0.18, upgradeCost: 130 },
+          { dmg: 35, fireRate: 1.28, range: 3.05, goldBonus: 5, auraSpd: 0.23, upgradeCost: 195 },
+          { dmg: 52, fireRate: 1.42, range: 3.3, goldBonus: 7, auraSpd: 0.28, upgradeCost: 280 },
+          { dmg: 76, fireRate: 1.6, range: 3.6, goldBonus: 10, auraSpd: 0.35, upgradeCost: 0 }
+        ]
+      },
+      cosmic: {
+        id: 'cosmic',
+        emoji: '🌌',
+        name: 'Slime Kosmik Laser',
+        role: 'Sinar Pemusnah Bos',
+        cost: 200,
+        unlockCost: 300,
+        color: '#06b6d4',
+        darkColor: '#155e75',
+        lightColor: '#cffafe',
+        projColor: '#22d3ee',
+        specialText: 'Sinar laser kontinu yang melipatgandakan damage hingga 2.5x saat mengunci target!',
+        levels: [
+          { dmg: 48, fireRate: 1.0, range: 3.4, maxRamp: 2.0, upgradeCost: 175 },
+          { dmg: 78, fireRate: 1.0, range: 3.65, maxRamp: 2.2, upgradeCost: 260 },
+          { dmg: 122, fireRate: 1.0, range: 3.9, maxRamp: 2.4, upgradeCost: 365 },
+          { dmg: 185, fireRate: 1.0, range: 4.2, maxRamp: 2.75, upgradeCost: 0 }
+        ]
+      }
+    };
+
+    // 4 Skill Aktif Elemental Burst (Tombol 1-4)
+    const ACTIVE_SKILLS = {
+      meteor: {
+        id: 'meteor',
+        hotkey: '1',
+        name: 'Hujan Meteor',
+        burstTitle: 'HUJAN METEOR!',
+        archonName: 'ARCHON MAGMA IGNIS',
+        elementLabel: 'PYRO BURST',
+        cooldown: 24,
+        icon: '☄️',
+        primaryColor: '#f97316',
+        secondaryColor: '#fde047',
+        darkBg: '#431407',
+        btnGrad: 'from-orange-500 to-red-700 border-amber-300'
+      },
+      freeze: {
+        id: 'freeze',
+        hotkey: '2',
+        name: 'Pembeku Massal',
+        burstTitle: 'PEMBEKU MASSAL!',
+        archonName: 'RATU GLASIER CRYO',
+        elementLabel: 'CRYO BURST',
+        cooldown: 26,
+        icon: '❄️',
+        primaryColor: '#38bdf8',
+        secondaryColor: '#e0f2fe',
+        darkBg: '#082f49',
+        btnGrad: 'from-sky-400 to-blue-700 border-cyan-200'
+      },
+      poisonSwarm: {
+        id: 'poisonSwarm',
+        hotkey: '3',
+        name: 'Poison Swarm',
+        burstTitle: 'POISON SWARM!',
+        archonName: 'WABAH ALKEMIS VENOM',
+        elementLabel: 'DENDRO-TOXIN BURST',
+        cooldown: 22,
+        icon: '🦠',
+        primaryColor: '#a855f7',
+        secondaryColor: '#bef264',
+        darkBg: '#2e1065',
+        btnGrad: 'from-purple-500 to-emerald-700 border-lime-300'
+      },
+      overdrive: {
+        id: 'overdrive',
+        hotkey: '4',
+        name: 'Golden Overdrive',
+        burstTitle: 'GOLDEN OVERDRIVE!',
+        archonName: 'KAISAR EMAS AURELIA',
+        elementLabel: 'GEO-SOLAR BURST',
+        cooldown: 28,
+        icon: '👑',
+        primaryColor: '#facc15',
+        secondaryColor: '#fef9c3',
+        darkBg: '#422006',
+        btnGrad: 'from-amber-400 to-yellow-600 border-yellow-200'
+      }
+    };
+
+    // Kartu Buff Acak Tiap Selesai Gelombang
+    const BUFF_POOL = [
+      { id: 'dmg_15', rarity: 'Common', name: 'Taring Gel Tajam', icon: '⚔️', desc: '+15% Damage Semua Menara', apply: (b) => { b.dmgMult += 0.15; } },
+      { id: 'spd_15', rarity: 'Common', name: 'Ritme Kenyal Lincah', icon: '⚡', desc: '+15% Attack Speed Semua Menara', apply: (b) => { b.spdMult += 0.15; } },
+      { id: 'rng_12', rarity: 'Common', name: 'Lensa Mata Elang', icon: '🔭', desc: '+12% Jangkauan Semua Menara', apply: (b) => { b.rngMult += 0.12; } },
+      { id: 'fort_hp', rarity: 'Common', name: 'Perbaikan Kristal', icon: '❤️', desc: '+4 Nyawa Benteng & +40 Koin Instan', apply: (b, g) => { g.lives += 4; g.gold += 40; } },
+      { id: 'gold_22', rarity: 'Rare', name: 'Alkimia Jarahan', icon: '🪙', desc: '+22% Bonus Koin dari Eliminasi Musuh', apply: (b) => { b.goldMult += 0.22; } },
+      { id: 'dot_30', rarity: 'Rare', name: 'Ekstrak Racun & Bara', icon: '🧪', desc: '+30% Damage Racun & Efek Bakar', apply: (b) => { b.dotMult += 0.30; } },
+      { id: 'cdr_20', rarity: 'Rare', name: 'Resonansi Elemental', icon: '🌀', desc: '-20% Cooldown Semua Skill Burst', apply: (b) => { b.cdrMult = Math.max(0.45, b.cdrMult - 0.20); } },
+      { id: 'crit_15', rarity: 'Rare', name: 'Inti Serangan Kritis', icon: '💥', desc: '+15% Peluang Critical Hit (2x DMG)', apply: (b) => { b.critBonus += 0.15; } },
+      { id: 'aoe_28', rarity: 'Epic', name: 'Ledakan Supernova', icon: '☄️', desc: '+28% Radius Ledakan & +18% Damage', apply: (b) => { b.aoeMult += 0.28; b.dmgMult += 0.18; } },
+      { id: 'royal_blessing', rarity: 'Epic', name: 'Berkah Panglima Gel', icon: '🛡️', desc: '+25% Damage & +20% Attack Speed', apply: (b) => { b.dmgMult += 0.25; b.spdMult += 0.20; } },
+      { id: 'crystal_mine', rarity: 'Epic', name: 'Tambang Kristal Abadi', icon: '💎', desc: '+120 Koin Instan & +30 Koin tiap selesai wave', apply: (b, g) => { g.gold += 120; b.waveGoldBonus += 30; } },
+      { id: 'cosmic_transcend', rarity: 'Legendary', name: 'Transendensi Kosmik', icon: '🌌', desc: '+35% DMG, +25% SPD, & -25% Cooldown Skill!', apply: (b) => { b.dmgMult += 0.35; b.spdMult += 0.25; b.cdrMult = Math.max(0.4, b.cdrMult - 0.25); } }
+    ];
+
+    const RARITY_STYLES = {
+      Common: {
+        border: 'border-emerald-400/60',
+        bg: 'from-slate-800 to-emerald-950/70',
+        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+      },
+      Rare: {
+        border: 'border-sky-400/80',
+        bg: 'from-slate-800 to-sky-950/80',
+        badge: 'bg-sky-500/25 text-sky-300 border-sky-400/50'
+      },
+      Epic: {
+        border: 'border-purple-400/90',
+        bg: 'from-slate-800 to-purple-950/85',
+        badge: 'bg-purple-500/25 text-purple-300 border-purple-400/60'
+      },
+      Legendary: {
+        border: 'border-amber-400 shadow-amber-500/30 shadow-xl',
+        bg: 'from-amber-950/90 via-slate-800 to-amber-950/90',
+        badge: 'bg-amber-400/25 text-amber-300 border-amber-300/70'
+      }
+    };
+
+    // 11 Variasi Musuh Slime (8 Reguler + 3 Boss Kebal Freeze & Stun Tower)
+    const ENEMY_TYPES = {
+      mini: {
+        id: 'mini',
+        name: 'Slime Mini',
+        hp: 62,
+        speed: 2.05,
+        armor: 0,
+        reward: 8,
+        score: 15,
+        radius: 14,
+        color: '#fb7185',
+        darkColor: '#be123c',
+        lightColor: '#fecdd3',
+        flying: false
+      },
+      warrior: {
+        id: 'warrior',
+        name: 'Slime Prajurit',
+        hp: 145,
+        speed: 1.45,
+        armor: 0.12,
+        reward: 13,
+        score: 25,
+        radius: 19,
+        color: '#3b82f6',
+        darkColor: '#1d4ed8',
+        lightColor: '#bfdbfe',
+        flying: false
+      },
+      iron: {
+        id: 'iron',
+        name: 'Slime Perisai Besi',
+        hp: 410,
+        speed: 0.88,
+        armor: 0.52,
+        reward: 24,
+        score: 50,
+        radius: 24,
+        color: '#94a3b8',
+        darkColor: '#1e293b',
+        lightColor: '#f1f5f9',
+        flying: false
+      },
+      shadow: {
+        id: 'shadow',
+        name: 'Slime Bayangan',
+        hp: 130,
+        speed: 2.35,
+        armor: 0.05,
+        reward: 16,
+        score: 35,
+        radius: 17,
+        color: '#7e22ce',
+        darkColor: '#3b0764',
+        lightColor: '#d8b4fe',
+        flying: false,
+        dashInterval: 3.4
+      },
+      flying: {
+        id: 'flying',
+        name: 'Slime Terbang',
+        hp: 118,
+        speed: 2.25,
+        armor: 0,
+        reward: 15,
+        score: 30,
+        radius: 18,
+        color: '#2dd4bf',
+        darkColor: '#0f766e',
+        lightColor: '#ccfbf1',
+        flying: true
+      },
+      healer: {
+        id: 'healer',
+        name: 'Slime Tabib',
+        hp: 195,
+        speed: 1.25,
+        armor: 0.08,
+        reward: 21,
+        score: 42,
+        radius: 20,
+        color: '#10b981',
+        darkColor: '#065f46',
+        lightColor: '#a7f3d0',
+        flying: false,
+        healInterval: 2.8,
+        healRadius: 2.0,
+        healAmount: 42
+      },
+      frostborn: {
+        id: 'frostborn',
+        name: 'Slime Frostborn',
+        hp: 240,
+        speed: 1.38,
+        armor: 0.22,
+        reward: 22,
+        score: 45,
+        radius: 21,
+        color: '#0284c7',
+        darkColor: '#0c4a6e',
+        lightColor: '#bae6fd',
+        flying: false,
+        freezeImmune: true
+      },
+      splitter: {
+        id: 'splitter',
+        name: 'Slime Pembelah',
+        hp: 215,
+        speed: 1.32,
+        armor: 0.10,
+        reward: 18,
+        score: 38,
+        radius: 22,
+        color: '#f59e0b',
+        darkColor: '#92400e',
+        lightColor: '#fef3c7',
+        flying: false,
+        splitsInto: 'mini'
+      },
+      // 3 BOSS MENANTANG (KEBAL FREEZE + SLAM STUN TOWER)
+      boss_king: {
+        id: 'boss_king',
+        name: 'Raja Slime Mahkota',
+        hp: 2400,
+        speed: 0.74,
+        armor: 0.28,
+        reward: 120,
+        score: 300,
+        radius: 34,
+        color: '#e11d48',
+        darkColor: '#881337',
+        lightColor: '#fda4af',
+        flying: false,
+        isBoss: true,
+        freezeImmune: true,
+        slamInterval: 6.5,
+        slamRadius: 2.4,
+        stunDuration: 3.5,
+        splitsInto: 'warrior'
+      },
+      boss_golem: {
+        id: 'boss_golem',
+        name: 'Golem Magma Slime',
+        hp: 4600,
+        speed: 0.64,
+        armor: 0.42,
+        reward: 180,
+        score: 500,
+        radius: 38,
+        color: '#ea580c',
+        darkColor: '#431407',
+        lightColor: '#fed7aa',
+        flying: false,
+        isBoss: true,
+        freezeImmune: true,
+        slamInterval: 5.8,
+        slamRadius: 2.75,
+        stunDuration: 3.5,
+        splitsInto: 'iron'
+      },
+      boss_abyssal: {
+        id: 'boss_abyssal',
+        name: 'Kaisar Abyssal Slime',
+        hp: 7800,
+        speed: 0.72,
+        armor: 0.36,
+        reward: 260,
+        score: 850,
+        radius: 41,
+        color: '#6d28d9',
+        darkColor: '#1e1b4b',
+        lightColor: '#ddd6fe',
+        flying: false,
+        isBoss: true,
+        freezeImmune: true,
+        slamInterval: 5.2,
+        slamRadius: 3.0,
+        stunDuration: 3.8,
+        splitsInto: 'shadow'
+      }
+    };
+
+    // 3 Peta Pilihan dengan Hadiah Utama Slime Essence (+100 / +200 / +300)
+    const MAPS = [
+      {
+        id: 'meadow',
+        name: 'Padang Rumput',
+        difficulty: 'Easy',
+        diffLabel: 'Mudah',
+        essenceReward: 100,
+        diffColor: 'text-emerald-300 bg-emerald-500/20 border-emerald-400/40',
+        description: 'Lembah hijau berkelok klasik. Ideal untuk menguji kombinasi menara dan skill burst.',
+        startGold: 185,
+        startLives: 20,
+        hpMult: 1.0,
+        theme: {
+          bg1: '#3f7d32',
+          bg2: '#366e2a',
+          pathFill: '#d6b88d',
+          pathBorder: '#9c7a4c',
+          pathPebble: '#b89668',
+          propType: 'forest'
+        },
+        paths: [
+          [
+            { c: 0, r: 2 },
+            { c: 4, r: 2 },
+            { c: 4, r: 6 },
+            { c: 9, r: 6 },
+            { c: 9, r: 2 },
+            { c: 13, r: 2 },
+            { c: 13, r: 6 },
+            { c: 15, r: 6 }
+          ]
+        ]
+      },
+      {
+        id: 'swamp',
+        name: 'Rawa Jamur',
+        difficulty: 'Medium',
+        diffLabel: 'Sedang',
+        essenceReward: 200,
+        diffColor: 'text-amber-300 bg-amber-500/20 border-amber-400/40',
+        description: 'Jalur putaran ganda di tengah rawa bercahaya dengan musuh lebih tangguh.',
+        startGold: 205,
+        startLives: 20,
+        hpMult: 1.25,
+        theme: {
+          bg1: '#264642',
+          bg2: '#1f3b38',
+          pathFill: '#7c7387',
+          pathBorder: '#4c4457',
+          pathPebble: '#635b6e',
+          propType: 'mushroom'
+        },
+        paths: [
+          [
+            { c: 0, r: 1 },
+            { c: 5, r: 1 },
+            { c: 5, r: 7 },
+            { c: 2, r: 7 },
+            { c: 2, r: 4 },
+            { c: 9, r: 4 },
+            { c: 9, r: 1 },
+            { c: 13, r: 1 },
+            { c: 13, r: 7 },
+            { c: 15, r: 7 }
+          ]
+        ]
+      },
+      {
+        id: 'volcano',
+        name: 'Kawah Magma',
+        difficulty: 'Hard',
+        diffLabel: 'Sulit',
+        essenceReward: 300,
+        diffColor: 'text-rose-300 bg-rose-500/20 border-rose-400/40',
+        description: 'Dua gerbang serangan menyatu di ngarai obsidian lalu membelah menuju Kristal!',
+        startGold: 230,
+        startLives: 18,
+        hpMult: 1.5,
+        theme: {
+          bg1: '#3b2426',
+          bg2: '#301c1e',
+          pathFill: '#57534e',
+          pathBorder: '#ea580c',
+          pathPebble: '#44403c',
+          propType: 'volcano'
+        },
+        paths: [
+          [
+            { c: 0, r: 1 },
+            { c: 5, r: 1 },
+            { c: 5, r: 4 },
+            { c: 11, r: 4 },
+            { c: 11, r: 2 },
+            { c: 14, r: 2 },
+            { c: 14, r: 4 },
+            { c: 15, r: 4 }
+          ],
+          [
+            { c: 0, r: 7 },
+            { c: 5, r: 7 },
+            { c: 5, r: 4 },
+            { c: 11, r: 4 },
+            { c: 11, r: 6 },
+            { c: 14, r: 6 },
+            { c: 14, r: 4 },
+            { c: 15, r: 4 }
+          ]
+        ]
+      }
+    ];
+
+    // 15 Gelombang Menantang dengan Variasi Lengkap & 3 Bos Unik
+    const HANDCRAFTED_WAVES = [
+      { title: 'Gelombang 1', sub: 'Pasukan pengintai Slime Mini & Prajurit!', groups: [{ type: 'mini', count: 9, interval: 0.85 }, { type: 'warrior', count: 3, interval: 1.0 }] },
+      { title: 'Gelombang 2', sub: 'Barisan Slime Prajurit & Pembelah!', groups: [{ type: 'warrior', count: 7, interval: 0.85 }, { type: 'splitter', count: 3, interval: 1.2 }] },
+      { title: 'Gelombang 3', sub: 'Awas dari langit! Slime Terbang & Bayangan!', groups: [{ type: 'flying', count: 8, interval: 0.7 }, { type: 'shadow', count: 5, interval: 0.85 }] },
+      { title: 'Gelombang 4', sub: 'Slime Perisai Besi berarmor tebal muncul!', groups: [{ type: 'iron', count: 4, interval: 1.4 }, { type: 'warrior', count: 8, interval: 0.75 }] },
+      { title: 'Gelombang 5 — BOS!', sub: 'RAJA SLIME MAHKOTA (Kebal Freeze & Stun Menara)!', boss: true, groups: [{ type: 'warrior', count: 6, interval: 0.8 }, { type: 'boss_king', count: 1, interval: 2.0 }, { type: 'splitter', count: 4, interval: 0.9 }] },
+      { title: 'Gelombang 6', sub: 'Slime Frostborn (Kebal Es) & Tabib masuk arena!', groups: [{ type: 'frostborn', count: 6, interval: 0.95 }, { type: 'healer', count: 3, interval: 1.4 }, { type: 'mini', count: 10, interval: 0.45 }] },
+      { title: 'Gelombang 7', sub: 'Serbuan kilat Slime Bayangan & Terbang!', groups: [{ type: 'shadow', count: 10, interval: 0.55 }, { type: 'flying', count: 10, interval: 0.55 }] },
+      { title: 'Gelombang 8', sub: 'Formasi berat Perisai Besi & Tabib!', groups: [{ type: 'iron', count: 7, interval: 1.1 }, { type: 'healer', count: 4, interval: 1.2 }, { type: 'splitter', count: 5, interval: 0.85 }] },
+      { title: 'Gelombang 9', sub: 'Legiun Frostborn Kebal Beku menyerbu!', groups: [{ type: 'frostborn', count: 10, interval: 0.7 }, { type: 'shadow', count: 8, interval: 0.6 }, { type: 'iron', count: 4, interval: 1.0 }] },
+      { title: 'Gelombang 10 — BOS!', sub: 'GOLEM MAGMA SLIME menggetarkan benteng!', boss: true, groups: [{ type: 'iron', count: 5, interval: 1.0 }, { type: 'healer', count: 4, interval: 1.1 }, { type: 'boss_golem', count: 1, interval: 2.0 }, { type: 'frostborn', count: 6, interval: 0.75 }] },
+      { title: 'Gelombang 11', sub: 'Badai udara & pembelah berantai!', groups: [{ type: 'flying', count: 15, interval: 0.45 }, { type: 'splitter', count: 10, interval: 0.6 }] },
+      { title: 'Gelombang 12', sub: 'Tembok hidup Perisai Besi & Frostborn!', groups: [{ type: 'iron', count: 10, interval: 0.85 }, { type: 'frostborn', count: 8, interval: 0.7 }, { type: 'healer', count: 5, interval: 0.95 }] },
+      { title: 'Gelombang 13', sub: 'Serangan bayangan berkecepatan tinggi!', groups: [{ type: 'shadow', count: 18, interval: 0.38 }, { type: 'flying', count: 12, interval: 0.45 }] },
+      { title: 'Gelombang 14', sub: 'Pasukan elit seluruh klan slime!', groups: [{ type: 'iron', count: 9, interval: 0.75 }, { type: 'frostborn', count: 10, interval: 0.6 }, { type: 'splitter', count: 8, interval: 0.65 }, { type: 'healer', count: 6, interval: 0.85 }] },
+      { title: 'Gelombang 15 — KAISAR TERAKHIR!', sub: 'KAISAR ABYSSAL SLIME & GOLEM MAGMA!', boss: true, groups: [{ type: 'iron', count: 8, interval: 0.75 }, { type: 'healer', count: 5, interval: 0.85 }, { type: 'boss_golem', count: 1, interval: 2.2 }, { type: 'shadow', count: 12, interval: 0.4 }, { type: 'boss_abyssal', count: 1, interval: 2.5 }] }
+    ];
+
+    function getWaveData(waveNum) {
+      if (waveNum <= HANDCRAFTED_WAVES.length) {
+        return HANDCRAFTED_WAVES[waveNum - 1];
+      }
+      const extra = waveNum - HANDCRAFTED_WAVES.length;
+      const isBoss = waveNum % 5 === 0;
+      const groups = [
+        { type: 'iron', count: 7 + extra, interval: Math.max(0.45, 0.75 - extra * 0.02) },
+        { type: 'frostborn', count: 8 + extra, interval: 0.55 },
+        { type: 'shadow', count: 10 + extra * 2, interval: Math.max(0.28, 0.45 - extra * 0.01) },
+        { type: 'healer', count: 4 + Math.floor(extra * 0.7), interval: 0.85 }
+      ];
+      if (isBoss) {
+        groups.push({ type: 'boss_abyssal', count: 1 + Math.floor(extra / 5), interval: 2.2 });
+      }
+      return {
+        title: isBoss ? `Gelombang ${waveNum} — BOS ABADI!` : `Gelombang ${waveNum} (Tanpa Batas)`,
+        sub: isBoss ? 'Kaisar Abyssal Slime muncul!' : 'Gelombang tanpa batas semakin mematikan!',
+        boss: isBoss,
+        groups
+      };
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. UTILITAS GEOMETRI & GAMBAR KARAKTER SLIME
+    // ----------------------------------------------------------------------------
+    function tileCenter(c, r) {
+      return {
+        x: c * TILE_SIZE + TILE_SIZE * 0.5,
+        y: r * TILE_SIZE + TILE_SIZE * 0.5
+      };
+    }
+
+    function dist(x1, y1, x2, y2) {
+      return Math.hypot(x2 - x1, y2 - y1);
+    }
+
+    // Gambar karakter Slime heroik untuk Genshin Elemental Burst Cut-In
+    function drawBurstArchonPortrait(ctx, skillId, cx, cy, scale = 1, time = 0) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+
+      const palettes = {
+        meteor: { body: '#f97316', dark: '#7c2d12', light: '#fed7aa', eye: '#fef08a', aura: '#fb923c' },
+        freeze: { body: '#38bdf8', dark: '#0c4a6e', light: '#e0f2fe', eye: '#ffffff', aura: '#7dd3fc' },
+        poisonSwarm: { body: '#9333ea', dark: '#3b0764', light: '#e9d5ff', eye: '#bef264', aura: '#a3e635' },
+        overdrive: { body: '#facc15', dark: '#713f12', light: '#fef9c3', eye: '#ffffff', aura: '#fde047' }
+      };
+      const pal = palettes[skillId] || palettes.meteor;
+
+      // Flowing elemental cape / aura behind character
+      const auraGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, 155);
+      auraGrad.addColorStop(0, pal.aura + 'aa');
+      auraGrad.addColorStop(0.6, pal.body + '44');
+      auraGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = auraGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 155, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Elemental Halo Ring
+      ctx.save();
+      ctx.rotate(time * 1.5);
+      ctx.strokeStyle = pal.secondaryColor || pal.light;
+      ctx.lineWidth = 4;
+      ctx.setLineDash([18, 10]);
+      ctx.beginPath();
+      ctx.arc(0, -10, 118, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Heroic Slime Body
+      const bodyGrad = ctx.createRadialGradient(-25, -45, 10, 0, 10, 115);
+      bodyGrad.addColorStop(0, pal.light);
+      bodyGrad.addColorStop(0.45, pal.body);
+      bodyGrad.addColorStop(1, pal.dark);
+
+      ctx.fillStyle = bodyGrad;
+      ctx.strokeStyle = pal.dark;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(-98, 55);
+      ctx.bezierCurveTo(-112, -55, -52, -98, 0, -98);
+      ctx.bezierCurveTo(52, -98, 112, -55, 98, 55);
+      ctx.bezierCurveTo(85, 92, -85, 92, -98, 55);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Specular Shine
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      ctx.ellipse(-38, -48, 26, 12, -0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Archon Headgear / Crown / Hood
+      if (skillId === 'meteor') {
+        // Blazing Obsidian Horns & Flame Crest
+        ctx.fillStyle = '#1c1917';
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-45, -82);
+        ctx.lineTo(-82, -135);
+        ctx.lineTo(-18, -94);
+        ctx.closePath();
+        ctx.moveTo(45, -82);
+        ctx.lineTo(82, -135);
+        ctx.lineTo(18, -94);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (skillId === 'freeze') {
+        // Ice Queen Crystal Tiara
+        drawCrown(ctx, 0, -92, 95, '#bae6fd', '#0284c7');
+      } else if (skillId === 'poisonSwarm') {
+        // Witch Alchemist Hat
+        ctx.fillStyle = '#3b0764';
+        ctx.strokeStyle = '#bef264';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(0, -86, 95, 18, -0.08, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-55, -88);
+        ctx.lineTo(12, -155);
+        ctx.lineTo(52, -88);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        // Solar Emperor Crown
+        drawCrown(ctx, 0, -92, 105, '#fde047', '#a16207');
+      }
+
+      // Fierce Anime Eyes with Glowing Iris
+      ctx.fillStyle = '#090d16';
+      ctx.beginPath();
+      ctx.ellipse(-34, 6, 15, 18, -0.1, 0, Math.PI * 2);
+      ctx.ellipse(34, 6, 15, 18, 0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = pal.eye;
+      ctx.beginPath();
+      ctx.arc(-34, 8, 9, 0, Math.PI * 2);
+      ctx.arc(34, 8, 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-39, 1, 5, 0, Math.PI * 2);
+      ctx.arc(29, 1, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Determined Heroic Smirk
+      ctx.strokeStyle = '#090d16';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-20, 34);
+      ctx.quadraticCurveTo(0, 46, 24, 30);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawCuteSlime(ctx, opts) {
+      const {
+        x, y, radius, color, darkColor, lightColor,
+        scaleX = 1, scaleY = 1,
+        lookX = 0, lookY = 0,
+        level = 1,
+        towerType = null,
+        enemyType = null,
+        tint = null,
+        isFrozen = false,
+        time = 0
+      } = opts;
+
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Level 4 Aura Ring for Towers
+      if (towerType && level >= 4) {
+        const pulse = 1 + Math.sin(time * 5) * 0.08;
+        ctx.save();
+        ctx.scale(pulse, pulse);
+        const grad = ctx.createRadialGradient(0, 0, radius * 0.4, 0, 0, radius * 1.65);
+        grad.addColorStop(0, lightColor + '66');
+        grad.addColorStop(0.7, color + '33');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.65, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Ground Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+      ctx.beginPath();
+      ctx.ellipse(0, radius * 0.78, radius * 0.92 * scaleX, radius * 0.34, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wings for Flying Slime
+      if (enemyType === 'flying') {
+        const flap = isFrozen ? 0 : Math.sin(time * 16) * 0.45;
+        ctx.fillStyle = '#f0fdfa';
+        ctx.strokeStyle = '#0d9488';
+        ctx.lineWidth = 2;
+
+        ctx.save();
+        ctx.translate(-radius * 0.7, -radius * 0.15);
+        ctx.rotate(-0.3 + flap);
+        ctx.beginPath();
+        ctx.ellipse(-10, 0, 12, 6, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(radius * 0.7, -radius * 0.15);
+        ctx.rotate(0.3 - flap);
+        ctx.beginPath();
+        ctx.ellipse(10, 0, 12, 6, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Squash & Stretch
+      ctx.translate(0, radius * 0.75);
+      ctx.scale(scaleX, scaleY);
+      ctx.translate(0, -radius * 0.75);
+
+      // Main Slime Body
+      const bodyGrad = ctx.createRadialGradient(-radius * 0.25, -radius * 0.35, radius * 0.1, 0, 0, radius * 1.15);
+      bodyGrad.addColorStop(0, lightColor);
+      bodyGrad.addColorStop(0.38, color);
+      bodyGrad.addColorStop(1, darkColor);
+
+      ctx.fillStyle = bodyGrad;
+      ctx.strokeStyle = darkColor;
+      ctx.lineWidth = Math.max(2, radius * 0.1);
+
+      ctx.beginPath();
+      ctx.moveTo(-radius * 0.95, radius * 0.45);
+      ctx.bezierCurveTo(-radius * 1.05, -radius * 0.55, -radius * 0.5, -radius * 0.95, 0, -radius * 0.95);
+      ctx.bezierCurveTo(radius * 0.5, -radius * 0.95, radius * 1.05, -radius * 0.55, radius * 0.95, radius * 0.45);
+      ctx.bezierCurveTo(radius * 0.85, radius * 0.82, -radius * 0.85, radius * 0.82, -radius * 0.95, radius * 0.45);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      if (tint) {
+        ctx.fillStyle = tint;
+        ctx.fill();
+      }
+
+      // Iron Shield Armor Plates
+      if (enemyType === 'iron' || enemyType === 'boss_golem') {
+        ctx.fillStyle = enemyType === 'boss_golem' ? '#44403c' : '#475569';
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(-radius * 0.82, -radius * 0.12, radius * 0.52, radius * 0.58, 4);
+        ctx.roundRect(radius * 0.30, -radius * 0.12, radius * 0.52, radius * 0.58, 4);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Frostborn Ice Spikes
+      if (enemyType === 'frostborn') {
+        ctx.fillStyle = '#e0f2fe';
+        ctx.strokeStyle = '#0369a1';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(-radius * 0.5, -radius * 0.7);
+        ctx.lineTo(-radius * 0.65, -radius * 1.15);
+        ctx.lineTo(-radius * 0.2, -radius * 0.85);
+        ctx.moveTo(radius * 0.5, -radius * 0.7);
+        ctx.lineTo(radius * 0.65, -radius * 1.15);
+        ctx.lineTo(radius * 0.2, -radius * 0.85);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Glossy Highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.beginPath();
+      ctx.ellipse(-radius * 0.35, -radius * 0.45, radius * 0.26, radius * 0.13, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      const eyeOffsetX = Math.max(-3.5, Math.min(3.5, lookX * 3.5));
+      const eyeOffsetY = Math.max(-2.5, Math.min(2.5, lookY * 2.5));
+      const eyeSpacing = radius * 0.34;
+      const eyeY = radius * 0.05 + eyeOffsetY;
+      const eyeR = Math.max(2.6, radius * 0.14);
+
+      ctx.fillStyle = enemyType === 'shadow' || enemyType === 'boss_abyssal' ? '#fef08a' : '#0f172a';
+      ctx.beginPath();
+      ctx.arc(-eyeSpacing + eyeOffsetX, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.arc(eyeSpacing + eyeOffsetX, eyeY, eyeR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-eyeSpacing + eyeOffsetX - eyeR * 0.3, eyeY - eyeR * 0.3, eyeR * 0.38, 0, Math.PI * 2);
+      ctx.arc(eyeSpacing + eyeOffsetX - eyeR * 0.3, eyeY - eyeR * 0.3, eyeR * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Mouth
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = Math.max(1.8, radius * 0.07);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      if (enemyType && (enemyType.startsWith('boss') || enemyType === 'iron' || enemyType === 'frostborn')) {
+        ctx.moveTo(-radius * 0.18 + eyeOffsetX, eyeY + eyeR * 1.5);
+        ctx.lineTo(0 + eyeOffsetX, eyeY + eyeR * 1.15);
+        ctx.lineTo(radius * 0.18 + eyeOffsetX, eyeY + eyeR * 1.5);
+      } else {
+        ctx.arc(eyeOffsetX, eyeY + eyeR * 1.1, radius * 0.15, 0.15 * Math.PI, 0.85 * Math.PI);
+      }
+      ctx.stroke();
+
+      // Tower Accessories
+      if (towerType) {
+        drawTowerAccessory(ctx, towerType, level, radius, time);
+      }
+
+      // Enemy Headgear
+      if (enemyType === 'healer') {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#047857';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(0, -radius * 0.95, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(-1.5, -radius * 0.95 - 4, 3, 8);
+        ctx.fillRect(-4, -radius * 0.95 - 1.5, 8, 3);
+      } else if (enemyType === 'boss_king') {
+        drawCrown(ctx, 0, -radius * 0.92, radius * 0.68, '#facc15', '#b45309');
+      } else if (enemyType === 'boss_golem') {
+        drawCrown(ctx, 0, -radius * 0.92, radius * 0.72, '#fb923c', '#7c2d12');
+      } else if (enemyType === 'boss_abyssal') {
+        drawCrown(ctx, 0, -radius * 0.92, radius * 0.76, '#c084fc', '#3b0764');
+      }
+
+      // Frozen Ice Block Overlay if Frozen!
+      if (isFrozen) {
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.48)';
+        ctx.strokeStyle = '#7dd3fc';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(-radius * 1.05, -radius * 1.05, radius * 2.1, radius * 1.9, 8);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawCrown(ctx, cx, cy, width, fill, stroke) {
+      const h = width * 0.58;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-width * 0.5, 0);
+      ctx.lineTo(-width * 0.55, -h);
+      ctx.lineTo(-width * 0.2, -h * 0.45);
+      ctx.lineTo(0, -h * 1.15);
+      ctx.lineTo(width * 0.2, -h * 0.45);
+      ctx.lineTo(width * 0.55, -h);
+      ctx.lineTo(width * 0.5, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(0, -h * 0.35, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawTowerAccessory(ctx, type, level, r, time) {
+      const topY = -r * 0.92;
+      if (type === 'leaf') {
+        ctx.fillStyle = '#4ade80';
+        ctx.strokeStyle = '#14532d';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(-6, topY - 4, 7, 3.5, -0.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        if (level >= 2) {
+          ctx.beginPath();
+          ctx.ellipse(6, topY - 4, 7, 3.5, 0.45, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        if (level >= 3) {
+          ctx.fillStyle = '#f472b6';
+          ctx.beginPath();
+          ctx.arc(0, topY - 5, 5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (type === 'ice') {
+        const bob = Math.sin(time * 4) * 2;
+        ctx.fillStyle = '#bae6fd';
+        ctx.strokeStyle = '#0284c7';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(0, topY - 13 + bob);
+        ctx.lineTo(6, topY - 5 + bob);
+        ctx.lineTo(0, topY + 1 + bob);
+        ctx.lineTo(-6, topY - 5 + bob);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'magma') {
+        ctx.fillStyle = '#292524';
+        ctx.strokeStyle = '#ea580c';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.45, topY + 4);
+        ctx.lineTo(-r * 0.72, topY - 9);
+        ctx.lineTo(-r * 0.2, topY + 1);
+        ctx.closePath();
+        ctx.moveTo(r * 0.45, topY + 4);
+        ctx.lineTo(r * 0.72, topY - 9);
+        ctx.lineTo(r * 0.2, topY + 1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'poison') {
+        const b1 = (time * 18) % 10;
+        ctx.fillStyle = '#bef264';
+        ctx.strokeStyle = '#3f6212';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(-4, topY - 3 - b1 * 0.5, 3.2, 0, Math.PI * 2);
+        ctx.arc(5, topY - 6 + b1 * 0.3, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'lightning') {
+        ctx.fillStyle = '#fef08a';
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(2, topY - 14);
+        ctx.lineTo(-5, topY - 4);
+        ctx.lineTo(0, topY - 4);
+        ctx.lineTo(-2, topY + 3);
+        ctx.lineTo(6, topY - 7);
+        ctx.lineTo(1, topY - 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'sniper') {
+        // Crystal Monocle / Scope Visor
+        ctx.strokeStyle = '#fdf2f8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(7, r * 0.05, 6.5, 0, Math.PI * 2);
+        ctx.stroke();
+        drawCrown(ctx, 0, topY + 1, r * 0.7, '#f472b6', '#831843');
+      } else if (type === 'void') {
+        // Orbiting miniature black hole
+        const ang = time * 4;
+        ctx.fillStyle = '#1e1b4b';
+        ctx.strokeStyle = '#c4b5fd';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(Math.cos(ang) * 8, topY - 7 + Math.sin(ang) * 3, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      } else if (type === 'alchemist') {
+        // Golden Alchemist Crown
+        drawCrown(ctx, 0, topY + 1, r * 0.85, '#fde047', '#854d0e');
+      } else if (type === 'cosmic') {
+        // Floating Cosmic Halo Ring
+        ctx.strokeStyle = '#67e8f9';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.ellipse(0, topY - 6, r * 0.65, 4, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 5. ENTITAS EFEK, GRAVITY VORTEX, PROYEKTIL, MUSUH, DAN MENARA
+    // ----------------------------------------------------------------------------
+    class Particle {
+      constructor(x, y, vx, vy, radius, color, life, gravity = 0) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = radius;
+        this.color = color;
+        this.life = life;
+        this.maxLife = life;
+        this.gravity = gravity;
+      }
+
+      update(dt) {
+        this.life -= dt;
+        this.vy += this.gravity * dt;
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+      }
+
+      draw(ctx) {
+        if (this.life <= 0) return;
+        const alpha = Math.max(0, this.life / this.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * (0.4 + 0.6 * alpha), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    class ShockwaveRing {
+      constructor(x, y, maxRadius, color, duration = 0.35) {
+        this.x = x;
+        this.y = y;
+        this.maxRadius = maxRadius;
+        this.color = color;
+        this.life = duration;
+        this.maxLife = duration;
+      }
+
+      update(dt) {
+        this.life -= dt;
+      }
+
+      draw(ctx) {
+        if (this.life <= 0) return;
+        const progress = 1 - this.life / this.maxLife;
+        const r = this.maxRadius * (0.2 + 0.8 * progress);
+        ctx.save();
+        ctx.globalAlpha = (1 - progress) * 0.78;
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 4 * (1 - progress) + 1.2;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    class LightningArc {
+      constructor(points, color = '#fde047', duration = 0.18) {
+        this.points = points;
+        this.color = color;
+        this.life = duration;
+        this.maxLife = duration;
+      }
+
+      update(dt) {
+        this.life -= dt;
+      }
+
+      draw(ctx) {
+        if (this.life <= 0 || this.points.length < 2) return;
+        const alpha = this.life / this.maxLife;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        for (let i = 0; i < this.points.length - 1; i++) {
+          const p1 = this.points[i];
+          const p2 = this.points[i + 1];
+          if (i === 0) ctx.moveTo(p1.x, p1.y);
+          const steps = 4;
+          for (let s = 1; s < steps; s++) {
+            const t = s / steps;
+            const jx = p1.x + (p2.x - p1.x) * t + (Math.random() - 0.5) * 18;
+            const jy = p1.y + (p2.y - p1.y) * t + (Math.random() - 0.5) * 18;
+            ctx.lineTo(jx, jy);
+          }
+          ctx.lineTo(p2.x, p2.y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // Persistent Gravity Vortex created by Slime Gravitasi Void
+    class GravityVortex {
+      constructor(x, y, radiusPx, dps, pullStrength, tower) {
+        this.x = x;
+        this.y = y;
+        this.radiusPx = radiusPx;
+        this.dps = dps;
+        this.pullStrength = pullStrength;
+        this.tower = tower;
+        this.life = 2.6;
+        this.maxLife = 2.6;
+        this.tickTimer = 0.35;
+      }
+
+      update(dt, game) {
+        this.life -= dt;
+        this.tickTimer -= dt;
+        const doDamageTick = this.tickTimer <= 0;
+        if (doDamageTick) this.tickTimer = 0.35;
+
+        for (const e of game.enemies) {
+          if (e.dead || e.reachedCore) continue;
+          const d = dist(this.x, this.y, e.x, e.y);
+          if (d <= this.radiusPx + e.radius) {
+            // Pull enemy gently toward vortex along track
+            if (!e.isBoss) {
+              e.pullToward(this.x, this.y, this.pullStrength * dt);
+            }
+            if (doDamageTick) {
+              e.takeDamage(this.dps * 0.35, this.tower);
+              if (e.dead) game.onEnemyKilled(e);
+            }
+          }
+        }
+      }
+
+      draw(ctx, time) {
+        if (this.life <= 0) return;
+        const fade = Math.min(1, this.life * 2);
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.globalAlpha = fade * 0.85;
+
+        const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, this.radiusPx);
+        grad.addColorStop(0, '#090d16');
+        grad.addColorStop(0.35, '#5b21b6');
+        grad.addColorStop(0.75, 'rgba(139, 92, 246, 0.25)');
+        grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radiusPx, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Swirling spiral rings
+        ctx.rotate(time * 5);
+        ctx.strokeStyle = '#ddd6fe';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 3; i++) {
+          ctx.rotate((Math.PI * 2) / 3);
+          ctx.beginPath();
+          ctx.arc(0, 0, this.radiusPx * 0.45, 0, Math.PI * 0.9);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+
+    class FloatingText {
+      constructor(x, y, text, color = '#ffffff', size = 14) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.color = color;
+        this.size = size;
+        this.life = 0.9;
+        this.maxLife = 0.9;
+      }
+
+      update(dt) {
+        this.life -= dt;
+        this.y -= 34 * dt;
+      }
+
+      draw(ctx) {
+        if (this.life <= 0) return;
+        const alpha = Math.min(1, (this.life / this.maxLife) * 1.4);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.font = `900 ${this.size}px Nunito, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.lineWidth = 3.5;
+        ctx.strokeText(this.text, this.x, this.y);
+        ctx.fillStyle = this.color;
+        ctx.fillText(this.text, this.x, this.y);
+        ctx.restore();
+      }
+    }
+
+    class Enemy {
+      constructor(typeId, waypoints, hpMultiplier = 1.0, startSegment = 0, startDist = 0) {
+        const cfg = ENEMY_TYPES[typeId];
+        this.typeId = typeId;
+        this.cfg = cfg;
+        this.waypoints = waypoints;
+        this.segmentIndex = startSegment;
+        this.segmentDist = startDist;
+
+        const p0 = waypoints[this.segmentIndex];
+        this.x = p0.x;
+        this.y = p0.y;
+        this.dirX = 1;
+        this.dirY = 0;
+        this.advancePosition(0);
+
+        this.maxHp = Math.round(cfg.hp * hpMultiplier);
+        this.hp = this.maxHp;
+        this.baseSpeed = cfg.speed * TILE_SIZE;
+        this.baseArmor = cfg.armor;
+        this.reward = cfg.reward;
+        this.score = cfg.score;
+        this.radius = cfg.radius;
+        this.flying = cfg.flying;
+        this.isBoss = !!cfg.isBoss;
+        this.freezeImmune = !!cfg.freezeImmune;
+
+        // Status effects
+        this.slowTimer = 0;
+        this.slowFactor = 0;
+        this.freezeTimer = 0;
+        this.poisonStacks = []; // { dps, timer, sourceTower }
+        this.burnTimer = 0;
+        this.burnDps = 0;
+        this.burnSource = null;
+        this.armorShred = 0;
+        this.armorShredTimer = 0;
+        this.immuneMsgCooldown = 0;
+
+        // Special enemy abilities
+        this.healTimer = cfg.healInterval ? cfg.healInterval * 0.55 : 0;
+        this.dashTimer = cfg.dashInterval ? cfg.dashInterval * 0.7 : 0;
+        this.dashActiveTimer = 0;
+
+        // Boss Slam Stun Tower ability
+        this.slamTimer = cfg.slamInterval ? cfg.slamInterval * 0.75 : 0;
+        this.slamTelegraph = 0; // > 0 means charging slam!
+
+        // Visuals
+        this.hopPhase = Math.random() * Math.PI * 2;
+        this.hitFlash = 0;
+        this.dead = false;
+        this.reachedCore = false;
+        this.totalProgress = 0;
+      }
+
+      advancePosition(distToMove) {
+        let remaining = distToMove;
+        while (remaining > 0 && this.segmentIndex < this.waypoints.length - 1) {
+          const a = this.waypoints[this.segmentIndex];
+          const b = this.waypoints[this.segmentIndex + 1];
+          const segLen = dist(a.x, a.y, b.x, b.y);
+          if (segLen <= 0.001) {
+            this.segmentIndex++;
+            this.segmentDist = 0;
+            continue;
+          }
+
+          this.dirX = (b.x - a.x) / segLen;
+          this.dirY = (b.y - a.y) / segLen;
+
+          const leftInSeg = segLen - this.segmentDist;
+          if (remaining < leftInSeg) {
+            this.segmentDist += remaining;
+            this.totalProgress += remaining;
+            remaining = 0;
+          } else {
+            remaining -= leftInSeg;
+            this.totalProgress += leftInSeg;
+            this.segmentIndex++;
+            this.segmentDist = 0;
+          }
+        }
+
+        if (this.segmentIndex >= this.waypoints.length - 1) {
+          const last = this.waypoints[this.waypoints.length - 1];
+          this.x = last.x;
+          this.y = last.y;
+          this.reachedCore = true;
+        } else {
+          const a = this.waypoints[this.segmentIndex];
+          const b = this.waypoints[this.segmentIndex + 1];
+          const segLen = dist(a.x, a.y, b.x, b.y) || 1;
+          const t = this.segmentDist / segLen;
+          this.x = a.x + (b.x - a.x) * t;
+          this.y = a.y + (b.y - a.y) * t;
+        }
+      }
+
+      // Gravity pull along track toward vortex center
+      pullToward(vx, vy, pullAmount) {
+        const toVortexX = vx - this.x;
+        const toVortexY = vy - this.y;
+        const dot = toVortexX * this.dirX + toVortexY * this.dirY;
+        if (dot < -4) {
+          // Vortex is behind enemy: pull enemy backward on track
+          const back = Math.min(this.segmentDist, pullAmount);
+          this.segmentDist -= back;
+          this.totalProgress = Math.max(0, this.totalProgress - back);
+          this.advancePosition(0);
+        }
+      }
+
+      applySlow(factor, duration, game = null) {
+        if (this.freezeImmune) {
+          if (game && this.immuneMsgCooldown <= 0) {
+            this.immuneMsgCooldown = 1.6;
+            game.floatingTexts.push(new FloatingText(this.x, this.y - this.radius - 14, 'KEBAL FREEZE!', '#7dd3fc', 12));
+          }
+          return;
+        }
+        if (factor >= this.slowFactor || this.slowTimer <= 0) {
+          this.slowFactor = factor;
+          this.slowTimer = Math.max(this.slowTimer, duration);
+        } else {
+          this.slowTimer = Math.max(this.slowTimer, duration * 0.7);
+        }
+      }
+
+      applyFreeze(duration, game = null) {
+        if (this.freezeImmune) {
+          if (game && this.immuneMsgCooldown <= 0) {
+            this.immuneMsgCooldown = 1.4;
+            game.floatingTexts.push(new FloatingText(this.x, this.y - this.radius - 16, 'KEBAL FREEZE!', '#38bdf8', 13));
+          }
+          return false;
+        }
+        this.freezeTimer = Math.max(this.freezeTimer, duration);
+        return true;
+      }
+
+      applyBurn(dps, duration, sourceTower) {
+        if (dps >= this.burnDps || this.burnTimer <= 0) {
+          this.burnDps = dps;
+          this.burnSource = sourceTower;
+        }
+        this.burnTimer = Math.max(this.burnTimer, duration);
+      }
+
+      applyPoison(dps, duration, armorShred, sourceTower) {
+        this.poisonStacks.push({ dps, timer: duration, sourceTower });
+        if (this.poisonStacks.length > 6) {
+          this.poisonStacks.shift();
+        }
+        if (armorShred > this.armorShred) {
+          this.armorShred = armorShred;
+        }
+        this.armorShredTimer = Math.max(this.armorShredTimer, duration);
+      }
+
+      takeDamage(rawDmg, sourceTower = null, ignoreArmor = false, armorPierce = 0) {
+        if (this.dead) return 0;
+        const effectiveArmor = ignoreArmor
+          ? 0
+          : Math.max(0, (this.baseArmor - this.armorShred) * (1 - armorPierce));
+        const finalDmg = Math.max(1, rawDmg * (1 - effectiveArmor));
+        this.hp -= finalDmg;
+        this.hitFlash = 0.08;
+
+        if (this.hp <= 0) {
+          this.hp = 0;
+          this.dead = true;
+          if (sourceTower) {
+            sourceTower.kills++;
+          }
+        }
+        return finalDmg;
+      }
+
+      update(dt, game) {
+        if (this.dead || this.reachedCore) return;
+
+        if (this.hitFlash > 0) this.hitFlash -= dt;
+        if (this.immuneMsgCooldown > 0) this.immuneMsgCooldown -= dt;
+
+        // Freeze decay
+        if (this.freezeTimer > 0) {
+          this.freezeTimer -= dt;
+        }
+
+        // Slow decay
+        if (this.slowTimer > 0) {
+          this.slowTimer -= dt;
+          if (this.slowTimer <= 0) {
+            this.slowFactor = 0;
+          }
+        }
+
+        // Armor shred decay
+        if (this.armorShredTimer > 0) {
+          this.armorShredTimer -= dt;
+          if (this.armorShredTimer <= 0) {
+            this.armorShred = 0;
+          }
+        }
+
+        // Burn DoT ticks
+        if (this.burnTimer > 0) {
+          this.burnTimer -= dt;
+          const burnDmg = this.burnDps * game.buffs.dotMult * dt;
+          this.takeDamage(burnDmg, this.burnSource, true);
+          if (Math.random() < dt * 5) {
+            game.particles.push(new Particle(
+              this.x + (Math.random() - 0.5) * this.radius,
+              this.y - this.radius * 0.4,
+              (Math.random() - 0.5) * 14,
+              -24 - Math.random() * 14,
+              3.2,
+              '#fb923c',
+              0.4
+            ));
+          }
+          if (this.dead) {
+            game.onEnemyKilled(this);
+            return;
+          }
+        }
+
+        // Poison DoT ticks
+        if (this.poisonStacks.length > 0) {
+          let totalDps = 0;
+          let lastSource = null;
+          for (let i = this.poisonStacks.length - 1; i >= 0; i--) {
+            const st = this.poisonStacks[i];
+            st.timer -= dt;
+            totalDps += st.dps;
+            lastSource = st.sourceTower;
+            if (st.timer <= 0) {
+              this.poisonStacks.splice(i, 1);
+            }
+          }
+          if (totalDps > 0) {
+            this.takeDamage(totalDps * game.buffs.dotMult * dt, lastSource, true);
+            if (Math.random() < dt * 5) {
+              game.particles.push(new Particle(
+                this.x + (Math.random() - 0.5) * this.radius,
+                this.y - this.radius * 0.4,
+                (Math.random() - 0.5) * 14,
+                -22 - Math.random() * 15,
+                3.2,
+                '#a3e635',
+                0.45
+              ));
+            }
+            if (this.dead) {
+              game.onEnemyKilled(this);
+              return;
+            }
+          }
+        }
+
+        // If completely frozen, skip movement and active abilities
+        if (this.freezeTimer > 0) {
+          return;
+        }
+
+        // Healer AoE Pulse (Slime Tabib)
+        if (this.cfg.healInterval) {
+          this.healTimer -= dt;
+          if (this.healTimer <= 0) {
+            this.healTimer = this.cfg.healInterval;
+            const healRadPx = this.cfg.healRadius * TILE_SIZE;
+            let healedAny = false;
+            for (const other of game.enemies) {
+              if (!other.dead && other.hp < other.maxHp && dist(this.x, this.y, other.x, other.y) <= healRadPx) {
+                other.hp = Math.min(other.maxHp, other.hp + this.cfg.healAmount);
+                healedAny = true;
+              }
+            }
+            if (healedAny) {
+              game.shockwaves.push(new ShockwaveRing(this.x, this.y, healRadPx, '#34d399', 0.45));
+              game.floatingTexts.push(new FloatingText(this.x, this.y - this.radius - 10, `+${this.cfg.healAmount} HP`, '#6ee7b7', 12));
+            }
+          }
+        }
+
+        // Shadow Slime Dash ability
+        if (this.cfg.dashInterval) {
+          if (this.dashActiveTimer > 0) {
+            this.dashActiveTimer -= dt;
+            if (Math.random() < 0.6) {
+              game.particles.push(new Particle(this.x, this.y, 0, 0, this.radius * 0.6, '#9333ea', 0.25));
+            }
+          } else {
+            this.dashTimer -= dt;
+            if (this.dashTimer <= 0) {
+              this.dashTimer = this.cfg.dashInterval;
+              this.dashActiveTimer = 0.55;
+            }
+          }
+        }
+
+        // BOSS SLAM STUN TOWER ABILITY!
+        if (this.isBoss && this.cfg.slamInterval) {
+          if (this.slamTelegraph > 0) {
+            this.slamTelegraph -= dt;
+            // Boss pauses while charging seismic slam
+            if (this.slamTelegraph <= 0) {
+              // EXECUTE SLAM! Stun all towers within slamRadius
+              const slamPx = this.cfg.slamRadius * TILE_SIZE;
+              sound.playBossStunSlam();
+              game.triggerShake(9, 0.35);
+              game.shockwaves.push(new ShockwaveRing(this.x, this.y, slamPx, '#f43f5e', 0.55));
+              game.shockwaves.push(new ShockwaveRing(this.x, this.y, slamPx * 0.65, '#facc15', 0.45));
+
+              let stunnedCount = 0;
+              for (const t of game.towers) {
+                if (dist(this.x, this.y, t.x, t.y) <= slamPx + 18) {
+                  t.applyStun(this.cfg.stunDuration);
+                  stunnedCount++;
+                  game.floatingTexts.push(new FloatingText(t.x, t.y - 24, `STUN! (${this.cfg.stunDuration}s)`, '#fde047', 13));
+                }
+              }
+              if (stunnedCount > 0) {
+                game.floatingTexts.push(new FloatingText(this.x, this.y - this.radius - 26, `HENTAKAN BOS! ${stunnedCount} MENARA STUN!`, '#fda4af', 15));
+              }
+            }
+            return; // Pause movement during slam windup
+          } else {
+            this.slamTimer -= dt;
+            // Only charge slam if there is at least 1 tower nearby
+            if (this.slamTimer <= 0) {
+              const slamPx = this.cfg.slamRadius * TILE_SIZE;
+              const hasTowerNear = game.towers.some((t) => dist(this.x, this.y, t.x, t.y) <= slamPx + 20);
+              if (hasTowerNear) {
+                this.slamTelegraph = 1.1; // 1.1s clear visual warning circle
+                this.slamTimer = this.cfg.slamInterval;
+              } else {
+                this.slamTimer = 1.5; // Re-check shortly
+              }
+            }
+          }
+        }
+
+        // Movement & Hop Animation
+        const dashMult = this.dashActiveTimer > 0 ? 2.4 : 1.0;
+        const speedMult = (1 - this.slowFactor) * dashMult;
+        const currentSpeed = this.baseSpeed * speedMult;
+        const prevHopSin = Math.sin(this.hopPhase);
+        this.hopPhase += dt * (this.flying ? 11 : 7.5) * Math.max(0.45, speedMult);
+        const currHopSin = Math.sin(this.hopPhase);
+
+        if (this.isBoss && prevHopSin > 0 && currHopSin <= 0) {
+          game.triggerShake(3.2, 0.14);
+        }
+
+        this.advancePosition(currentSpeed * dt);
+      }
+
+      draw(ctx, time) {
+        const isFrozen = this.freezeTimer > 0;
+        const hop = isFrozen ? 0 : Math.abs(Math.sin(this.hopPhase));
+        const jumpHeight = this.flying ? 16 + hop * 8 : hop * 7;
+        const scaleX = isFrozen ? 1 : (this.flying ? 1 + Math.sin(this.hopPhase) * 0.05 : 1 + (1 - hop) * 0.12 - hop * 0.07);
+        const scaleY = isFrozen ? 1 : (this.flying ? 1 - Math.sin(this.hopPhase) * 0.05 : 1 - (1 - hop) * 0.12 + hop * 0.09);
+
+        // Draw Boss Slam Telegraph Warning Circle on Ground!
+        if (this.isBoss && this.slamTelegraph > 0) {
+          const slamPx = this.cfg.slamRadius * TILE_SIZE;
+          const progress = 1 - this.slamTelegraph / 1.1;
+          ctx.save();
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.18)';
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([8, 5]);
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, slamPx, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Expanding inner charge ring
+          ctx.fillStyle = 'rgba(251, 146, 60, 0.25)';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, slamPx * progress, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Warning icon above boss
+          ctx.font = '900 16px Fredoka, sans-serif';
+          ctx.fillStyle = '#fde047';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚠️ STUN SLAM!', this.x, this.y - this.radius - 28);
+          ctx.restore();
+        }
+
+        let statusTint = null;
+        if (this.hitFlash > 0) {
+          statusTint = 'rgba(255, 255, 255, 0.55)';
+        } else if (this.slowTimer > 0) {
+          statusTint = 'rgba(56, 189, 248, 0.35)';
+        } else if (this.burnTimer > 0) {
+          statusTint = 'rgba(249, 115, 22, 0.35)';
+        } else if (this.poisonStacks.length > 0) {
+          statusTint = 'rgba(163, 230, 53, 0.32)';
+        }
+
+        drawCuteSlime(ctx, {
+          x: this.x,
+          y: this.y - jumpHeight,
+          radius: this.radius,
+          color: this.cfg.color,
+          darkColor: this.cfg.darkColor,
+          lightColor: this.cfg.lightColor,
+          scaleX,
+          scaleY,
+          lookX: this.dirX,
+          lookY: this.dirY,
+          enemyType: this.typeId,
+          tint: statusTint,
+          isFrozen,
+          time
+        });
+
+        // Health Bar
+        const barW = Math.max(26, this.radius * 1.65);
+        const barH = this.isBoss ? 8 : 5;
+        const barX = this.x - barW * 0.5;
+        const barY = this.y - jumpHeight - this.radius - (this.isBoss ? 19 : 11);
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.beginPath();
+        ctx.roundRect(barX - 1, barY - 1, barW + 2, barH + 2, 3);
+        ctx.fill();
+
+        const hpRatio = Math.max(0, this.hp / this.maxHp);
+        ctx.fillStyle = this.isBoss ? '#f43f5e' : hpRatio > 0.5 ? '#4ade80' : hpRatio > 0.25 ? '#facc15' : '#ef4444';
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW * hpRatio, barH, 2);
+        ctx.fill();
+
+        if (this.baseArmor - this.armorShred > 0.12) {
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = 'bold 9px Nunito, sans-serif';
+          ctx.textAlign = 'right';
+          ctx.fillText('🛡️', barX - 2, barY + barH);
+        }
+      }
+    }
+
+    class Projectile {
+      constructor(opts) {
+        this.x = opts.x;
+        this.y = opts.y;
+        this.target = opts.target;
+        this.targetX = opts.target.x;
+        this.targetY = opts.target.y;
+        this.tower = opts.tower;
+        this.type = opts.type;
+        this.dmg = opts.dmg;
+        this.speed = opts.speed;
+        this.color = opts.color;
+        this.splash = opts.splash || 0;
+        this.slowPct = opts.slowPct || 0;
+        this.slowDur = opts.slowDur || 0;
+        this.miniFreeze = opts.miniFreeze || 0;
+        this.burnDps = opts.burnDps || 0;
+        this.poisonDps = opts.poisonDps || 0;
+        this.armorShred = opts.armorShred || 0;
+        this.vortexRadius = opts.vortexRadius || 0;
+        this.pullStrength = opts.pullStrength || 0;
+        this.goldBonus = opts.goldBonus || 0;
+        this.isCrit = !!opts.isCrit;
+        this.armorPierce = opts.armorPierce || 0;
+
+        this.isArc = this.type === 'magma';
+        this.startX = this.x;
+        this.startY = this.y;
+        this.totalDist = Math.max(10, dist(this.startX, this.startY, this.targetX, this.targetY));
+        this.progress = 0;
+        this.arcHeight = Math.min(115, this.totalDist * 0.36);
+        this.dead = false;
+      }
+
+      update(dt, game) {
+        if (this.dead) return;
+
+        if (this.target && !this.target.dead && !this.target.reachedCore) {
+          this.targetX = this.target.x;
+          this.targetY = this.target.y;
+        }
+
+        if (this.isArc) {
+          const duration = this.totalDist / this.speed;
+          this.progress += dt / Math.max(0.12, duration);
+          if (this.progress >= 1) {
+            this.x = this.targetX;
+            this.y = this.targetY;
+            this.onHit(game);
+          } else {
+            this.x = this.startX + (this.targetX - this.startX) * this.progress;
+            this.y = this.startY + (this.targetY - this.startY) * this.progress;
+          }
+        } else {
+          const dx = this.targetX - this.x;
+          const dy = this.targetY - this.y;
+          const d = Math.hypot(dx, dy);
+          const step = this.speed * dt;
+          if (d <= step + 8) {
+            this.x = this.targetX;
+            this.y = this.targetY;
+            this.onHit(game);
+          } else {
+            this.x += (dx / d) * step;
+            this.y += (dy / d) * step;
+          }
+        }
+      }
+
+      onHit(game) {
+        this.dead = true;
+
+        if (this.type === 'magma') {
+          sound.playExplosion();
+          game.triggerShake(4, 0.16);
+          const splashPx = this.splash * TILE_SIZE * game.buffs.aoeMult;
+          game.shockwaves.push(new ShockwaveRing(this.x, this.y, splashPx, '#fb923c', 0.35));
+          for (let i = 0; i < 16; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 40 + Math.random() * 120;
+            game.particles.push(new Particle(this.x, this.y, Math.cos(ang) * spd, Math.sin(ang) * spd, 4 + Math.random() * 4, i % 2 === 0 ? '#f97316' : '#facc15', 0.45));
+          }
+          for (const enemy of game.enemies) {
+            if (!enemy.dead && dist(this.x, this.y, enemy.x, enemy.y) <= splashPx + enemy.radius) {
+              const dealt = enemy.takeDamage(this.dmg, this.tower);
+              if (this.burnDps > 0) enemy.applyBurn(this.burnDps, 3.0, this.tower);
+              if (enemy.dead) game.onEnemyKilled(enemy);
+              else if (Math.random() < 0.45) {
+                game.floatingTexts.push(new FloatingText(enemy.x, enemy.y - 18, `-${Math.round(dealt)}`, '#fdba74', 12));
+              }
+            }
+          }
+        } else if (this.type === 'ice') {
+          sound.playFreeze();
+          const splashPx = this.splash * TILE_SIZE * game.buffs.aoeMult;
+          game.shockwaves.push(new ShockwaveRing(this.x, this.y, splashPx, '#38bdf8', 0.32));
+          for (let i = 0; i < 12; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 30 + Math.random() * 90;
+            game.particles.push(new Particle(this.x, this.y, Math.cos(ang) * spd, Math.sin(ang) * spd, 3.5, '#bae6fd', 0.4));
+          }
+          for (const enemy of game.enemies) {
+            if (!enemy.dead && dist(this.x, this.y, enemy.x, enemy.y) <= splashPx + enemy.radius) {
+              enemy.takeDamage(this.dmg, this.tower);
+              enemy.applySlow(this.slowPct, this.slowDur, game);
+              if (this.miniFreeze > 0 && enemy === this.target) {
+                enemy.applyFreeze(this.miniFreeze, game);
+              }
+              if (enemy.dead) game.onEnemyKilled(enemy);
+            }
+          }
+        } else if (this.type === 'poison') {
+          for (let i = 0; i < 8; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 25 + Math.random() * 65;
+            game.particles.push(new Particle(this.x, this.y, Math.cos(ang) * spd, Math.sin(ang) * spd, 3.5, '#a3e635', 0.38));
+          }
+          if (this.target && !this.target.dead) {
+            this.target.takeDamage(this.dmg, this.tower);
+            this.target.applyPoison(this.poisonDps, 3.8, this.armorShred, this.tower);
+            if (this.target.dead) game.onEnemyKilled(this.target);
+          }
+        } else if (this.type === 'void') {
+          // Spawn Gravity Vortex at impact point!
+          const radPx = this.vortexRadius * TILE_SIZE * game.buffs.aoeMult;
+          game.vortices.push(new GravityVortex(this.x, this.y, radPx, this.dmg, this.pullStrength, this.tower));
+          game.shockwaves.push(new ShockwaveRing(this.x, this.y, radPx, '#a78bfa', 0.35));
+        } else if (this.type === 'alchemist') {
+          for (let i = 0; i < 8; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            game.particles.push(new Particle(this.x, this.y, Math.cos(ang) * 55, Math.sin(ang) * 55, 3.5, '#fde047', 0.35));
+          }
+          if (this.target && !this.target.dead) {
+            const dealt = this.target.takeDamage(this.dmg, this.tower);
+            if (Math.random() < 0.55) {
+              game.gold += this.goldBonus;
+              game.floatingTexts.push(new FloatingText(this.target.x, this.target.y - 22, `+${this.goldBonus} 🪙`, '#fde047', 12));
+              game.updateHUD();
+            }
+            if (this.target.dead) game.onEnemyKilled(this.target);
+            else game.floatingTexts.push(new FloatingText(this.target.x, this.target.y - 14, `-${Math.round(dealt)}`, '#fef08a', 11));
+          }
+        } else if (this.type === 'sniper') {
+          for (let i = 0; i < 10; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            game.particles.push(new Particle(this.x, this.y, Math.cos(ang) * 85, Math.sin(ang) * 85, 3.5, '#f472b6', 0.32));
+          }
+          if (this.target && !this.target.dead) {
+            const dealt = this.target.takeDamage(this.dmg, this.tower, false, this.armorPierce);
+            const label = this.isCrit ? `CRIT! -${Math.round(dealt)}` : `-${Math.round(dealt)}`;
+            game.floatingTexts.push(new FloatingText(this.target.x, this.target.y - 18, label, this.isCrit ? '#f43f5e' : '#fbcfe8', this.isCrit ? 15 : 12));
+            if (this.target.dead) game.onEnemyKilled(this.target);
+          }
+        } else {
+          // Leaf single/multi shot
+          for (let i = 0; i < 6; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            game.particles.push(new Particle(this.x, this.y, Math.cos(ang) * 60, Math.sin(ang) * 60, 3, '#4ade80', 0.28));
+          }
+          if (this.target && !this.target.dead) {
+            const dealt = this.target.takeDamage(this.dmg, this.tower);
+            const label = this.isCrit ? `CRIT! -${Math.round(dealt)}` : `-${Math.round(dealt)}`;
+            game.floatingTexts.push(new FloatingText(this.target.x, this.target.y - 16, label, this.isCrit ? '#fde047' : '#86efac', this.isCrit ? 14 : 11));
+            if (this.target.dead) game.onEnemyKilled(this.target);
+          }
+        }
+      }
+
+      draw(ctx) {
+        if (this.dead) return;
+        if (this.isArc) {
+          const zOffset = Math.sin(this.progress * Math.PI) * this.arcHeight;
+          ctx.fillStyle = 'rgba(0,0,0,0.28)';
+          ctx.beginPath();
+          ctx.ellipse(this.x, this.y, 7, 3.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f97316';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y - zOffset, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.arc(this.x - 1.5, this.y - zOffset - 1.5, 4, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.save();
+          ctx.fillStyle = this.color;
+          ctx.shadowColor = this.color;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.type === 'void' ? 7.5 : this.type === 'leaf' ? 4.8 : 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = this.type === 'void' ? '#090d16' : '#ffffff';
+          ctx.beginPath();
+          ctx.arc(this.x - 1, this.y - 1, this.type === 'void' ? 4 : 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+
+    class Tower {
+      constructor(typeId, col, row) {
+        this.typeId = typeId;
+        this.cfg = TOWER_TYPES[typeId];
+        this.col = col;
+        this.row = row;
+        const center = tileCenter(col, row);
+        this.x = center.x;
+        this.y = center.y;
+
+        this.level = 1;
+        this.totalInvested = this.cfg.cost;
+        this.kills = 0;
+        this.targetMode = 'first';
+
+        this.cooldown = 0;
+        this.stunTimer = 0; // Stunned by Boss Slam!
+        this.lookX = 0;
+        this.lookY = 1;
+        this.squashTimer = 0.25;
+        this.idlePhase = Math.random() * Math.PI * 2;
+
+        // Cosmic Laser continuous lock-on state
+        this.laserTarget = null;
+        this.laserLockTime = 0;
+        this.laserSoundTimer = 0;
+      }
+
+      getStats() {
+        return this.cfg.levels[this.level - 1];
+      }
+
+      getNextStats() {
+        return this.level < 4 ? this.cfg.levels[this.level] : null;
+      }
+
+      getSellValue() {
+        return Math.round(this.totalInvested * 0.75);
+      }
+
+      applyStun(duration) {
+        this.stunTimer = Math.max(this.stunTimer, duration);
+        this.laserTarget = null;
+        this.laserLockTime = 0;
+      }
+
+      upgrade() {
+        const stats = this.getStats();
+        if (this.level >= 4 || !stats.upgradeCost) return false;
+        this.totalInvested += stats.upgradeCost;
+        this.level++;
+        this.squashTimer = 0.3;
+        return true;
+      }
+
+      cycleTargetMode() {
+        const modes = ['first', 'strongest', 'closest'];
+        const idx = modes.indexOf(this.targetMode);
+        this.targetMode = modes[(idx + 1) % modes.length];
+      }
+
+      getEffectiveRange(game) {
+        return this.getStats().range * TILE_SIZE * game.buffs.rngMult;
+      }
+
+      getAlchemistAuraBonus(game) {
+        let bestBonus = 0;
+        for (const other of game.towers) {
+          if (other === this || other.typeId !== 'alchemist' || other.stunTimer > 0) continue;
+          const d = dist(this.x, this.y, other.x, other.y);
+          if (d <= other.getEffectiveRange(game)) {
+            bestBonus = Math.max(bestBonus, other.getStats().auraSpd || 0);
+          }
+        }
+        return bestBonus;
+      }
+
+      findTarget(enemies, rangePx) {
+        let best = null;
+        let bestMetric = -Infinity;
+
+        for (const e of enemies) {
+          if (e.dead || e.reachedCore) continue;
+          const d = dist(this.x, this.y, e.x, e.y);
+          if (d > rangePx + e.radius * 0.5) continue;
+
+          let metric = 0;
+          if (this.targetMode === 'first') metric = e.totalProgress;
+          else if (this.targetMode === 'strongest') metric = e.hp;
+          else metric = -d;
+
+          if (metric > bestMetric) {
+            bestMetric = metric;
+            best = e;
+          }
+        }
+        return best;
+      }
+
+      update(dt, game) {
+        this.idlePhase += dt * 3.4;
+        if (this.squashTimer > 0) {
+          this.squashTimer = Math.max(0, this.squashTimer - dt);
+        }
+
+        // Stun check
+        if (this.stunTimer > 0) {
+          this.stunTimer = Math.max(0, this.stunTimer - dt);
+          this.laserTarget = null;
+          return;
+        }
+
+        if (this.cooldown > 0) {
+          this.cooldown -= dt;
+        }
+
+        const stats = this.getStats();
+        const rangePx = this.getEffectiveRange(game);
+        const overdriveBonus = game.overdriveTimer > 0 ? 0.60 : 0;
+        const alchemistBonus = this.getAlchemistAuraBonus(game);
+        const totalSpdMult = game.buffs.spdMult + overdriveBonus + alchemistBonus;
+
+        // Special Continuous Beam Logic for Cosmic Laser Tower
+        if (this.typeId === 'cosmic') {
+          let target = this.laserTarget;
+          if (!target || target.dead || target.reachedCore || dist(this.x, this.y, target.x, target.y) > rangePx + target.radius * 0.5) {
+            target = this.findTarget(game.enemies, rangePx);
+            this.laserTarget = target;
+            this.laserLockTime = 0;
+          }
+
+          if (target) {
+            const dx = target.x - this.x;
+            const dy = target.y - this.y;
+            const d = Math.hypot(dx, dy) || 1;
+            this.lookX = dx / d;
+            this.lookY = dy / d;
+
+            this.laserLockTime += dt;
+            const rampMult = Math.min(stats.maxRamp, 1 + this.laserLockTime * 0.45);
+            const dps = stats.dmg * game.buffs.dmgMult * totalSpdMult * rampMult;
+            target.takeDamage(dps * dt, this, false, 0.35);
+
+            this.laserSoundTimer -= dt;
+            if (this.laserSoundTimer <= 0) {
+              this.laserSoundTimer = 0.22;
+              sound.playShoot('cosmic');
+            }
+
+            if (Math.random() < dt * 14) {
+              game.particles.push(new Particle(
+                target.x + (Math.random() - 0.5) * 14,
+                target.y + (Math.random() - 0.5) * 14,
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 60,
+                3,
+                '#22d3ee',
+                0.22
+              ));
+            }
+
+            if (target.dead) {
+              game.onEnemyKilled(target);
+              this.laserTarget = null;
+              this.laserLockTime = 0;
+            }
+          }
+          return;
+        }
+
+        const target = this.findTarget(game.enemies, rangePx);
+        if (target) {
+          const dx = target.x - this.x;
+          const dy = target.y - this.y;
+          const d = Math.hypot(dx, dy) || 1;
+          this.lookX = dx / d;
+          this.lookY = dy / d;
+
+          if (this.cooldown <= 0) {
+            this.fire(target, game);
+            this.cooldown = 1 / (stats.fireRate * totalSpdMult);
+            this.squashTimer = 0.18;
+          }
+        }
+      }
+
+      fire(target, game) {
+        const stats = this.getStats();
+        sound.playShoot(this.typeId);
+
+        const baseCritChance = (stats.critChance || 0) + game.buffs.critBonus;
+        const rollDamage = () => {
+          const isCrit = Math.random() < baseCritChance;
+          const dmg = stats.dmg * game.buffs.dmgMult * (isCrit ? 2.1 : 1.0);
+          return { dmg, isCrit };
+        };
+
+        if (this.typeId === 'lightning') {
+          const hitSet = new Set([target]);
+          const chainPoints = [{ x: this.x, y: this.y - 14 }, { x: target.x, y: target.y - 8 }];
+          let current = target;
+          let { dmg, isCrit } = rollDamage();
+
+          const dealt1 = current.takeDamage(dmg, this);
+          if (current.dead) game.onEnemyKilled(current);
+          else game.floatingTexts.push(new FloatingText(current.x, current.y - 18, `${isCrit ? 'CRIT! ' : ''}-${Math.round(dealt1)}`, '#fde047', 12));
+
+          const bounceRange = 2.15 * TILE_SIZE;
+          for (let b = 1; b < stats.chains; b++) {
+            let nextEnemy = null;
+            let nearest = Infinity;
+            for (const cand of game.enemies) {
+              if (cand.dead || cand.reachedCore || hitSet.has(cand)) continue;
+              const d = dist(current.x, current.y, cand.x, cand.y);
+              if (d <= bounceRange && d < nearest) {
+                nearest = d;
+                nextEnemy = cand;
+              }
+            }
+            if (!nextEnemy) break;
+            hitSet.add(nextEnemy);
+            dmg *= 0.84;
+            const dealtN = nextEnemy.takeDamage(dmg, this);
+            if (nextEnemy.dead) game.onEnemyKilled(nextEnemy);
+            chainPoints.push({ x: nextEnemy.x, y: nextEnemy.y - 8 });
+            current = nextEnemy;
+          }
+
+          game.lightningArcs.push(new LightningArc(chainPoints, '#fde047', 0.2));
+          return;
+        }
+
+        const spawnProj = (offsetAngle = 0) => {
+          const { dmg, isCrit } = rollDamage();
+          const baseAng = Math.atan2(target.y - this.y, target.x - this.x) + offsetAngle;
+          const muzzleDist = 14;
+          game.projectiles.push(new Projectile({
+            x: this.x + Math.cos(baseAng) * muzzleDist,
+            y: this.y - 8 + Math.sin(baseAng) * muzzleDist,
+            target,
+            tower: this,
+            type: this.typeId,
+            dmg,
+            isCrit,
+            speed: this.typeId === 'sniper' ? 920 : this.typeId === 'magma' ? 350 : this.typeId === 'leaf' ? 560 : 450,
+            color: this.cfg.projColor,
+            splash: stats.splash || 0,
+            slowPct: stats.slowPct || 0,
+            slowDur: stats.slowDur || 0,
+            miniFreeze: stats.miniFreeze || 0,
+            burnDps: stats.burnDps || 0,
+            poisonDps: stats.poisonDps || 0,
+            armorShred: stats.armorShred || 0,
+            vortexRadius: stats.vortexRadius || 0,
+            pullStrength: stats.pullStrength || 0,
+            goldBonus: stats.goldBonus || 0,
+            armorPierce: stats.armorPierce || 0
+          }));
+        };
+
+        const count = stats.multiShot || 1;
+        if (count === 2) {
+          spawnProj(-0.11);
+          spawnProj(0.11);
+        } else if (count >= 3) {
+          spawnProj(-0.18);
+          spawnProj(0);
+          spawnProj(0.18);
+        } else {
+          spawnProj(0);
+        }
+      }
+
+      draw(ctx, time, isSelected, game) {
+        const rangePx = this.getEffectiveRange(game);
+
+        // Range circle when selected
+        if (isSelected) {
+          ctx.save();
+          ctx.fillStyle = this.typeId === 'alchemist' ? 'rgba(250, 204, 21, 0.1)' : 'rgba(255, 255, 255, 0.08)';
+          ctx.strokeStyle = 'rgba(253, 224, 71, 0.8)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([7, 5]);
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, rangePx, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Golden Overdrive or Alchemist Buff Aura glow beneath tower
+        if (game.overdriveTimer > 0 || this.getAlchemistAuraBonus(game) > 0) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y + 14, 26 + Math.sin(time * 8) * 2, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Pedestal base
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.38)';
+        ctx.beginPath();
+        ctx.ellipse(this.x, this.y + 18, 24, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        let scaleX = this.stunTimer > 0 ? 1.08 : 1 + Math.sin(this.idlePhase) * 0.04;
+        let scaleY = this.stunTimer > 0 ? 0.90 : 1 - Math.sin(this.idlePhase) * 0.04;
+        if (this.squashTimer > 0 && this.stunTimer <= 0) {
+          const s = Math.sin((this.squashTimer / 0.25) * Math.PI);
+          scaleX += s * 0.22;
+          scaleY -= s * 0.2;
+        }
+
+        const radius = 21 + (this.level - 1) * 1.5;
+        drawCuteSlime(ctx, {
+          x: this.x,
+          y: this.y + 2,
+          radius,
+          color: this.cfg.color,
+          darkColor: this.cfg.darkColor,
+          lightColor: this.cfg.lightColor,
+          scaleX,
+          scaleY,
+          lookX: this.lookX,
+          lookY: this.lookY,
+          level: this.level,
+          towerType: this.typeId,
+          tint: this.stunTimer > 0 ? 'rgba(148, 163, 184, 0.45)' : null,
+          time
+        });
+
+        // Draw Continuous Cosmic Laser Beam
+        if (this.typeId === 'cosmic' && this.laserTarget && !this.laserTarget.dead && this.stunTimer <= 0) {
+          const ramp = Math.min(this.getStats().maxRamp, 1 + this.laserLockTime * 0.45);
+          ctx.save();
+          ctx.strokeStyle = '#06b6d4';
+          ctx.shadowColor = '#22d3ee';
+          ctx.shadowBlur = 14;
+          ctx.lineWidth = 4 + ramp * 2.5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(this.x, this.y - 10);
+          ctx.lineTo(this.laserTarget.x, this.laserTarget.y - 8);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.8 + ramp * 0.8;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Orbiting Dizzy Stars when Stunned by Boss!
+        if (this.stunTimer > 0) {
+          ctx.save();
+          for (let i = 0; i < 3; i++) {
+            const ang = time * 5.5 + (i * Math.PI * 2) / 3;
+            const sx = this.x + Math.cos(ang) * 18;
+            const sy = this.y - 24 + Math.sin(ang) * 6;
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('⭐', sx, sy);
+          }
+          ctx.restore();
+        }
+
+        // Level Pips below tower
+        const pipY = this.y + 26;
+        const pipGap = 7;
+        const startPipX = this.x - ((this.level - 1) * pipGap) / 2;
+        for (let i = 0; i < this.level; i++) {
+          ctx.fillStyle = '#fde047';
+          ctx.strokeStyle = '#713f12';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.arc(startPipX + i * pipGap, pipY, 2.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 6. PENGENDALI UTAMA PERMAINAN (GAME CONTROLLER)
+    // ----------------------------------------------------------------------------
+    class Game {
+      constructor() {
+        this.canvas = document.getElementById('game-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.container = document.getElementById('canvas-container');
+
+        this.selectedMapIndex = 0;
+        this.map = MAPS[0];
+
+        this.grid = [];
+        this.pathTiles = new Set();
+        this.pathArrows = [];
+        this.waypointPaths = [];
+        this.props = [];
+
+        // Run State
+        this.lives = 20;
+        this.gold = 185;
+        this.wave = 1;
+        this.score = 0;
+        this.kills = 0;
+        this.towersBuilt = 0;
+        this.gameSpeed = 1; // 1, 2, or 0 (Paused)
+        this.autoWave = false;
+        this.autoWaveCountdown = 0;
+        this.isRunning = false;
+        this.isGameOver = false;
+        this.victoryReached = false;
+        this.waitingForBuffChoice = false;
+
+        // Session Buff Multipliers (from Random Buff Cards)
+        this.buffs = {
+          list: [],
+          dmgMult: 1.0,
+          spdMult: 1.0,
+          rngMult: 1.0,
+          goldMult: 1.0,
+          dotMult: 1.0,
+          cdrMult: 1.0,
+          critBonus: 0.0,
+          aoeMult: 1.0,
+          waveGoldBonus: 0
+        };
+        this.rerollAvailable = true;
+
+        // Active Skills Cooldowns & Burst Cut-in State
+        this.skillCooldowns = {
+          meteor: 0,
+          freeze: 0,
+          poisonSwarm: 0,
+          overdrive: 0
+        };
+        this.overdriveTimer = 0;
+        this.burstCutin = null; // { skillId, timer, maxTimer, executed }
+        this.pendingMeteors = []; // { x, y, delay }
+
+        // Wave Spawning
+        this.waveActive = false;
+        this.spawnQueue = [];
+        this.spawnTimer = 0;
+        this.nextPathToggle = 0;
+
+        // Entities
+        this.towers = [];
+        this.enemies = [];
+        this.projectiles = [];
+        this.vortices = [];
+        this.particles = [];
+        this.shockwaves = [];
+        this.lightningArcs = [];
+        this.floatingTexts = [];
+
+        this.buildTowerType = null;
+        this.selectedTower = null;
+        this.hoverTile = null;
+
+        this.time = 0;
+        this.shakeTime = 0;
+        this.shakeIntensity = 0;
+        this.corePulse = 0;
+
+        this.setupStartScreenUI();
+        this.setupSkillsBarUI();
+        this.bindEvents();
+        this.resizeCanvas();
+
+        this.lastFrameTime = performance.now();
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      // Render Start Screen: Map Cards + 9-Tower Armory Collection
+      setupStartScreenUI() {
+        document.getElementById('menu-essence-count').textContent = meta.essence;
+
+        // 1. Map Cards
+        const mapContainer = document.getElementById('map-cards-container');
+        mapContainer.innerHTML = '';
+        MAPS.forEach((m, idx) => {
+          const isSelected = idx === this.selectedMapIndex;
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = `map-card text-left rounded-2xl bg-slate-900/90 border-2 ${isSelected ? 'active border-emerald-400' : 'border-slate-700'} p-3.5 flex flex-col justify-between cursor-pointer`;
+          card.innerHTML = `
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <span class="font-display font-bold text-base sm:text-lg text-white">${m.name}</span>
+                <span class="px-2 py-0.5 rounded-full border text-[11px] font-extrabold ${m.diffColor}">${m.difficulty} (${m.diffLabel})</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed mb-2.5">${m.description}</p>
+            </div>
+            <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-800 font-extrabold">
+              <span class="text-rose-300">❤️ ${m.startLives} • 🪙 ${m.startGold}</span>
+              <span class="px-2 py-0.5 rounded-lg bg-fuchsia-500/20 border border-fuchsia-400/40 text-fuchsia-200">+${m.essenceReward} 🔮</span>
+            </div>
+          `;
+          card.addEventListener('click', () => {
+            sound.unlock();
+            sound.playCoin();
+            this.selectedMapIndex = idx;
+            this.setupStartScreenUI();
+          });
+          mapContainer.appendChild(card);
+        });
+
+        // 2. Armory 9-Tower Collection Grid
+        const armoryGrid = document.getElementById('armory-grid');
+        armoryGrid.innerHTML = '';
+        const allTowers = Object.values(TOWER_TYPES);
+        const unlockedCount = allTowers.filter((t) => meta.isUnlocked(t.id)).length;
+        document.getElementById('unlocked-counter-badge').textContent = `${unlockedCount} / ${allTowers.length} Terbuka`;
+
+        allTowers.forEach((t) => {
+          const unlocked = meta.isUnlocked(t.id);
+          const canAfford = meta.essence >= t.unlockCost;
+          const item = document.createElement('div');
+          item.className = `rounded-2xl p-3 border-2 flex flex-col justify-between transition ${
+            unlocked
+              ? 'bg-slate-800/90 border-emerald-500/40'
+              : 'bg-slate-950/90 border-slate-700/80'
+          }`;
+
+          item.innerHTML = `
+            <div class="flex items-start gap-2.5">
+              <div class="w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center relative" style="background: ${t.darkColor}55; border: 1.5px solid ${t.color}66;">
+                <span class="text-2xl ${unlocked ? '' : 'grayscale opacity-70'}">${t.emoji}</span>
+                ${!unlocked ? '<span class="absolute -top-1.5 -right-1.5 text-xs bg-slate-900 rounded-full px-1 border border-slate-600">🔒</span>' : ''}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1">
+                  <span class="font-display font-bold text-sm text-white truncate">${t.name}</span>
+                  <span class="text-[11px] font-extrabold text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded">🪙 ${t.cost}</span>
+                </div>
+                <div class="text-[11px] font-bold text-slate-400">${t.role}</div>
+                <p class="text-[11px] text-slate-300 mt-1 leading-snug">${t.specialText}</p>
+              </div>
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between">
+              ${
+                unlocked
+                  ? '<span class="text-xs font-extrabold text-emerald-400 flex items-center gap-1">✅ Siap Digunakan</span>'
+                  : `<span class="text-[11px] font-bold text-fuchsia-300">Butuh ${t.unlockCost} Essence</span>
+                     <button type="button" data-unlock-id="${t.id}" class="btn-juicy px-3 py-1 rounded-xl ${
+                       canAfford
+                         ? 'bg-gradient-to-r from-fuchsia-500 to-purple-600 border border-fuchsia-300 text-white cursor-pointer'
+                         : 'bg-slate-800 border border-slate-700 text-slate-400 cursor-not-allowed'
+                     } font-display font-bold text-xs">
+                       🔓 Buka (${t.unlockCost} 🔮)
+                     </button>`
+              }
+            </div>
+          `;
+          armoryGrid.appendChild(item);
+        });
+
+        // Attach Unlock button listeners
+        armoryGrid.querySelectorAll('button[data-unlock-id]').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            sound.unlock();
+            const id = btn.getAttribute('data-unlock-id');
+            const cfg = TOWER_TYPES[id];
+            if (!cfg) return;
+            if (meta.unlockTower(id, cfg.unlockCost)) {
+              sound.playUnlock();
+              this.setupStartScreenUI();
+            } else {
+              sound.playLifeLost();
+            }
+          });
+        });
+      }
+
+      // Render 4 Active Skill Burst Buttons
+      setupSkillsBarUI() {
+        const bar = document.getElementById('skills-bar');
+        bar.innerHTML = '';
+        Object.values(ACTIVE_SKILLS).forEach((sk) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = `skill-btn-${sk.id}`;
+          btn.className = `btn-juicy relative overflow-hidden rounded-xl bg-gradient-to-b ${sk.btnGrad} border px-2 py-1.5 flex items-center justify-between gap-1 text-left cursor-pointer`;
+          btn.innerHTML = `
+            <div id="skill-cd-overlay-${sk.id}" class="hidden absolute inset-0 bg-slate-950/80 flex items-center justify-center font-display font-bold text-sm text-white z-10">
+              24s
+            </div>
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="text-base sm:text-lg flex-shrink-0">${sk.icon}</span>
+              <div class="min-w-0 leading-tight">
+                <div class="font-display font-bold text-[10px] sm:text-xs text-white truncate drop-shadow">${sk.name}</div>
+                <div class="text-[9px] font-extrabold text-white/80 hidden sm:block">Burst [${sk.hotkey}]</div>
+              </div>
+            </div>
+            <span class="px-1.5 py-0.5 rounded bg-black/35 text-[10px] font-extrabold text-white flex-shrink-0">[${sk.hotkey}]</span>
+          `;
+          btn.addEventListener('click', () => {
+            sound.unlock();
+            this.triggerSkill(sk.id);
+          });
+          bar.appendChild(btn);
+        });
+      }
+
+      // Render Unlocked Towers in Bottom Dock
+      setupTowerDockUI() {
+        const dock = document.getElementById('tower-dock');
+        dock.innerHTML = '';
+        const unlockedTowers = Object.values(TOWER_TYPES).filter((t) => meta.isUnlocked(t.id));
+
+        unlockedTowers.forEach((t) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = `tower-card-${t.id}`;
+          btn.className = 'tower-card flex-1 min-w-[74px] sm:min-w-[92px] rounded-2xl bg-slate-800/95 border-2 border-slate-600/80 p-1.5 flex flex-col items-center text-center relative cursor-pointer';
+          btn.innerHTML = `
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center mb-0.5" style="background: ${t.darkColor}55;">
+              <span class="text-xl sm:text-2xl">${t.emoji}</span>
+            </div>
+            <div class="font-display font-bold text-[10px] sm:text-xs text-white leading-tight truncate w-full">${t.name}</div>
+            <div class="mt-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 font-extrabold text-[10px]">
+              🪙 ${t.cost}
+            </div>
+          `;
+          btn.addEventListener('click', () => {
+            sound.unlock();
+            this.selectBuildTower(t.id);
+          });
+          dock.appendChild(btn);
+        });
+        this.updateTowerDockUI();
+      }
+
+      bindEvents() {
+        window.addEventListener('resize', () => this.resizeCanvas());
+
+        document.getElementById('btn-start-game').addEventListener('click', () => {
+          sound.unlock();
+          sound.playBuild();
+          this.startNewGame(this.selectedMapIndex);
+        });
+
+        document.getElementById('btn-back-menu').addEventListener('click', () => {
+          this.isRunning = false;
+          document.getElementById('end-modal').classList.add('hidden');
+          document.getElementById('buff-modal').classList.add('hidden');
+          document.getElementById('game-screen').classList.add('hidden');
+          document.getElementById('game-screen').classList.remove('flex');
+          document.getElementById('start-screen').classList.remove('hidden');
+          this.setupStartScreenUI();
+        });
+
+        document.getElementById('btn-next-wave').addEventListener('click', () => {
+          sound.unlock();
+          this.triggerNextWave();
+        });
+
+        document.getElementById('btn-auto-wave').addEventListener('click', () => {
+          this.autoWave = !this.autoWave;
+          this.updateHUD();
+        });
+
+        document.getElementById('btn-speed').addEventListener('click', () => {
+          this.gameSpeed = this.gameSpeed === 1 ? 2 : this.gameSpeed === 2 ? 0 : 1;
+          document.getElementById('btn-speed').textContent = this.gameSpeed === 0 ? '⏸️' : `${this.gameSpeed}x`;
+        });
+
+        document.getElementById('btn-mute').addEventListener('click', () => {
+          const muted = sound.toggleMute();
+          document.getElementById('btn-mute').textContent = muted ? '🔇' : '🔊';
+        });
+
+        document.getElementById('btn-cancel-build').addEventListener('click', () => {
+          this.cancelBuild();
+        });
+
+        // Reroll Buff Cards (1x)
+        document.getElementById('btn-reroll-buffs').addEventListener('click', () => {
+          if (!this.rerollAvailable) return;
+          this.rerollAvailable = false;
+          sound.playCoin();
+          this.renderBuffCards();
+        });
+
+        // Inspector Controls
+        document.getElementById('btn-close-inspector').addEventListener('click', () => {
+          this.selectedTower = null;
+          this.updateInspector();
+        });
+
+        document.getElementById('btn-target-mode').addEventListener('click', () => {
+          if (!this.selectedTower) return;
+          sound.playCoin();
+          this.selectedTower.cycleTargetMode();
+          this.updateInspector();
+        });
+
+        document.getElementById('btn-upgrade-tower').addEventListener('click', () => {
+          if (!this.selectedTower) return;
+          const stats = this.selectedTower.getStats();
+          if (this.selectedTower.level >= 4) return;
+          if (this.gold < stats.upgradeCost) {
+            this.showToast('Koin tidak cukup untuk meningkatkan menara!');
+            return;
+          }
+          this.gold -= stats.upgradeCost;
+          this.selectedTower.upgrade();
+          sound.playUpgrade();
+
+          for (let i = 0; i < 18; i++) {
+            const a = (i / 18) * Math.PI * 2;
+            this.particles.push(new Particle(this.selectedTower.x, this.selectedTower.y, Math.cos(a) * 85, Math.sin(a) * 85, 4, '#fde047', 0.5));
+          }
+          this.floatingTexts.push(new FloatingText(this.selectedTower.x, this.selectedTower.y - 26, `NAIK LV. ${this.selectedTower.level}!`, '#fde047', 14));
+          this.updateHUD();
+          this.updateInspector();
+          this.updateTowerDockUI();
+        });
+
+        document.getElementById('btn-sell-tower').addEventListener('click', () => {
+          if (!this.selectedTower) return;
+          const refund = this.selectedTower.getSellValue();
+          this.gold += refund;
+          this.grid[this.selectedTower.row][this.selectedTower.col] = 'empty';
+          sound.playCoin();
+
+          for (let i = 0; i < 12; i++) {
+            const a = Math.random() * Math.PI * 2;
+            this.particles.push(new Particle(this.selectedTower.x, this.selectedTower.y, Math.cos(a) * 65, Math.sin(a) * 65, 3.5, '#fbbf24', 0.4));
+          }
+          this.floatingTexts.push(new FloatingText(this.selectedTower.x, this.selectedTower.y - 16, `+${refund} Koin`, '#fcd34d', 14));
+
+          this.towers = this.towers.filter((t) => t !== this.selectedTower);
+          this.selectedTower = null;
+          this.updateHUD();
+          this.updateInspector();
+          this.updateTowerDockUI();
+        });
+
+        // End Modal Buttons
+        document.getElementById('btn-replay').addEventListener('click', () => {
+          document.getElementById('end-modal').classList.add('hidden');
+          this.startNewGame(this.selectedMapIndex);
+        });
+
+        document.getElementById('btn-modal-maps').addEventListener('click', () => {
+          document.getElementById('end-modal').classList.add('hidden');
+          document.getElementById('game-screen').classList.add('hidden');
+          document.getElementById('game-screen').classList.remove('flex');
+          document.getElementById('start-screen').classList.remove('hidden');
+          this.setupStartScreenUI();
+        });
+
+        document.getElementById('btn-endless').addEventListener('click', () => {
+          document.getElementById('end-modal').classList.add('hidden');
+          this.isGameOver = false;
+          this.isRunning = true;
+          this.wave++;
+          this.updateHUD();
+          this.triggerNextWave();
+        });
+
+        // Canvas Pointer Interactions
+        const getTileFromEvent = (clientX, clientY) => {
+          const rect = this.canvas.getBoundingClientRect();
+          const scaleX = LOGICAL_W / rect.width;
+          const scaleY = LOGICAL_H / rect.height;
+          const lx = (clientX - rect.left) * scaleX;
+          const ly = (clientY - rect.top) * scaleY;
+          const c = Math.floor(lx / TILE_SIZE);
+          const r = Math.floor(ly / TILE_SIZE);
+          if (c < 0 || c >= GRID_COLS || r < 0 || r >= GRID_ROWS) return null;
+          return { c, r, lx, ly };
+        };
+
+        this.canvas.addEventListener('pointermove', (e) => {
+          this.hoverTile = getTileFromEvent(e.clientX, e.clientY);
+        });
+
+        this.canvas.addEventListener('pointerleave', () => {
+          this.hoverTile = null;
+        });
+
+        this.canvas.addEventListener('pointerdown', (e) => {
+          sound.unlock();
+          if (e.button === 2) {
+            this.cancelBuild();
+            return;
+          }
+          const tile = getTileFromEvent(e.clientX, e.clientY);
+          this.hoverTile = tile;
+          if (!tile) return;
+          this.handleCanvasTap(tile.c, tile.r);
+        });
+
+        this.canvas.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          this.cancelBuild();
+        });
+
+        // Keyboard Shortcuts: [1-4] for Elemental Burst Active Skills!
+        window.addEventListener('keydown', (e) => {
+          if (!this.isRunning || this.waitingForBuffChoice) return;
+          if (e.key === 'Escape') {
+            this.cancelBuild();
+            this.selectedTower = null;
+            this.updateInspector();
+          } else if (e.key === '1') this.triggerSkill('meteor');
+          else if (e.key === '2') this.triggerSkill('freeze');
+          else if (e.key === '3') this.triggerSkill('poisonSwarm');
+          else if (e.key === '4') this.triggerSkill('overdrive');
+          else if (e.key === ' ') {
+            e.preventDefault();
+            this.triggerNextWave();
+          }
+        });
+      }
+
+      resizeCanvas() {
+        if (!this.container) return;
+        const pad = 8;
+        const availW = Math.max(280, this.container.clientWidth - pad);
+        const availH = Math.max(180, this.container.clientHeight - pad);
+        const aspect = LOGICAL_W / LOGICAL_H;
+
+        let displayW = availW;
+        let displayH = displayW / aspect;
+        if (displayH > availH) {
+          displayH = availH;
+          displayW = displayH * aspect;
+        }
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        this.canvas.style.width = `${Math.floor(displayW)}px`;
+        this.canvas.style.height = `${Math.floor(displayH)}px`;
+        this.canvas.width = Math.floor(LOGICAL_W * dpr);
+        this.canvas.height = Math.floor(LOGICAL_H * dpr);
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      startNewGame(mapIndex) {
+        this.map = MAPS[mapIndex];
+        this.lives = this.map.startLives;
+        this.gold = this.map.startGold;
+        this.wave = 1;
+        this.score = 0;
+        this.kills = 0;
+        this.towersBuilt = 0;
+        this.gameSpeed = 1;
+        document.getElementById('btn-speed').textContent = '1x';
+        this.isRunning = true;
+        this.isGameOver = false;
+        this.victoryReached = false;
+        this.waitingForBuffChoice = false;
+        this.waveActive = false;
+        this.spawnQueue = [];
+        this.autoWaveCountdown = 0;
+
+        this.buffs = {
+          list: [],
+          dmgMult: 1.0,
+          spdMult: 1.0,
+          rngMult: 1.0,
+          goldMult: 1.0,
+          dotMult: 1.0,
+          cdrMult: 1.0,
+          critBonus: 0.0,
+          aoeMult: 1.0,
+          waveGoldBonus: 0
+        };
+
+        this.skillCooldowns = { meteor: 0, freeze: 0, poisonSwarm: 0, overdrive: 0 };
+        this.overdriveTimer = 0;
+        this.burstCutin = null;
+        this.pendingMeteors = [];
+
+        this.towers = [];
+        this.enemies = [];
+        this.projectiles = [];
+        this.vortices = [];
+        this.particles = [];
+        this.shockwaves = [];
+        this.lightningArcs = [];
+        this.floatingTexts = [];
+        this.buildTowerType = null;
+        this.selectedTower = null;
+
+        this.buildMapGrid();
+
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('game-screen').classList.add('flex');
+        document.getElementById('hud-map-name').textContent = `${this.map.name} (${this.map.difficulty})`;
+
+        this.resizeCanvas();
+        this.setupTowerDockUI();
+        this.updateInspector();
+        this.updateHUD();
+        this.showBanner(`${this.map.name} (${this.map.difficulty})`, 'Bangun menara slime & gunakan Elemental Burst [1-4]!', false);
+      }
+
+      buildMapGrid() {
+        this.grid = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill('empty'));
+        this.pathTiles = new Set();
+        this.pathArrows = [];
+        this.waypointPaths = [];
+        this.props = [];
+
+        for (const rawPath of this.map.paths) {
+          const wp = rawPath.map((pt) => tileCenter(pt.c, pt.r));
+          this.waypointPaths.push(wp);
+
+          for (let i = 0; i < rawPath.length - 1; i++) {
+            const a = rawPath[i];
+            const b = rawPath[i + 1];
+            const dc = Math.sign(b.c - a.c);
+            const dr = Math.sign(b.r - a.r);
+            let c = a.c;
+            let r = a.r;
+            while (true) {
+              this.grid[r][c] = 'path';
+              const key = `${c},${r}`;
+              if (!this.pathTiles.has(key)) {
+                this.pathTiles.add(key);
+                if (c !== b.c || r !== b.r) {
+                  this.pathArrows.push({ c, r, angle: Math.atan2(dr, dc) });
+                }
+              }
+              if (c === b.c && r === b.r) break;
+              c += dc;
+              r += dr;
+            }
+          }
+        }
+
+        let seed = this.selectedMapIndex * 97 + 13;
+        const rand = () => {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646;
+        };
+
+        for (let r = 0; r < GRID_ROWS; r++) {
+          for (let c = 0; c < GRID_COLS; c++) {
+            if (this.grid[r][c] !== 'empty') continue;
+            const isBorder = r === 0 || r === GRID_ROWS - 1 || c === 0 || c === GRID_COLS - 1;
+            const chance = isBorder ? 0.32 : 0.07;
+            if (rand() < chance) {
+              this.grid[r][c] = 'prop';
+              this.props.push({
+                c,
+                r,
+                variant: Math.floor(rand() * 3),
+                scale: 0.85 + rand() * 0.25
+              });
+            }
+          }
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // ACTIVE SKILLS & GENSHIN IMPACT ELEMENTAL BURST CUT-IN
+      // --------------------------------------------------------------------------
+      triggerSkill(skillId) {
+        if (!this.isRunning || this.isGameOver || this.waitingForBuffChoice) return;
+        if (this.burstCutin) return; // Already playing a burst animation
+
+        const sk = ACTIVE_SKILLS[skillId];
+        if (!sk) return;
+
+        if (this.skillCooldowns[skillId] > 0) {
+          this.showToast(`${sk.name} masih Cooldown (${Math.ceil(this.skillCooldowns[skillId])} detik)!`);
+          return;
+        }
+
+        // Apply cooldown with Buff CDR multiplier
+        this.skillCooldowns[skillId] = sk.cooldown * this.buffs.cdrMult;
+
+        // Launch Genshin Impact Elemental Burst Cut-In (~1.15s)
+        sound.playGenshinBurst(skillId);
+        this.burstCutin = {
+          skillId,
+          timer: 1.15,
+          maxTimer: 1.15,
+          executed: false
+        };
+      }
+
+      executeSkillEffect(skillId) {
+        this.triggerShake(10, 0.4);
+
+        if (skillId === 'meteor') {
+          // Spawn 14 fiery meteors along the enemy path tiles!
+          const pathCoords = Array.from(this.pathTiles).map((k) => {
+            const [c, r] = k.split(',').map(Number);
+            return tileCenter(c, r);
+          });
+          for (let i = 0; i < 14; i++) {
+            // Prioritize tiles near enemies if available, else random path tiles
+            let targetPt;
+            if (this.enemies.length > 0 && i < this.enemies.length * 2) {
+              const e = this.enemies[i % this.enemies.length];
+              targetPt = { x: e.x + (Math.random() - 0.5) * 45, y: e.y + (Math.random() - 0.5) * 45 };
+            } else {
+              const p = pathCoords[Math.floor(Math.random() * pathCoords.length)];
+              targetPt = { x: p.x + (Math.random() - 0.5) * 30, y: p.y + (Math.random() - 0.5) * 30 };
+            }
+            this.pendingMeteors.push({
+              x: targetPt.x,
+              y: targetPt.y,
+              delay: i * 0.11
+            });
+          }
+        } else if (skillId === 'freeze') {
+          // Pembeku Massal: Freeze all non-immune enemies for 4.5s + Cryo damage!
+          const cryoDmg = (95 + this.wave * 18) * this.buffs.dmgMult;
+          this.shockwaves.push(new ShockwaveRing(LOGICAL_W * 0.5, LOGICAL_H * 0.5, 650, '#38bdf8', 0.65));
+          for (let i = 0; i < 45; i++) {
+            this.particles.push(new Particle(
+              Math.random() * LOGICAL_W,
+              Math.random() * LOGICAL_H,
+              (Math.random() - 0.5) * 90,
+              40 + Math.random() * 90,
+              4.5,
+              '#bae6fd',
+              0.9
+            ));
+          }
+          for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const e = this.enemies[i];
+            if (e.dead) continue;
+            e.takeDamage(cryoDmg, null);
+            e.applyFreeze(4.5, this);
+            if (e.dead) {
+              this.onEnemyKilled(e);
+              this.enemies.splice(i, 1);
+            }
+          }
+        } else if (skillId === 'poisonSwarm') {
+          // Poison Swarm: Venomous slime swarm afflicts all enemies with massive poison + 45% armor shred!
+          const burstDmg = (60 + this.wave * 12) * this.buffs.dmgMult;
+          const poisonDps = 36 + this.wave * 7;
+          this.shockwaves.push(new ShockwaveRing(LOGICAL_W * 0.5, LOGICAL_H * 0.5, 650, '#a855f7', 0.6));
+          for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const e = this.enemies[i];
+            if (e.dead) continue;
+            e.takeDamage(burstDmg, null);
+            e.applyPoison(poisonDps, 6.0, 0.45, null);
+            e.applyPoison(poisonDps, 6.0, 0.45, null);
+            for (let p = 0; p < 10; p++) {
+              const ang = Math.random() * Math.PI * 2;
+              this.particles.push(new Particle(e.x, e.y, Math.cos(ang) * 75, Math.sin(ang) * 75, 4, p % 2 === 0 ? '#a855f7' : '#bef264', 0.55));
+            }
+            if (e.dead) {
+              this.onEnemyKilled(e);
+              this.enemies.splice(i, 1);
+            }
+          }
+        } else if (skillId === 'overdrive') {
+          // Golden Overdrive: +90 Instant Coins + 60% Attack Speed for 8 seconds!
+          const bonusGold = 90;
+          this.gold += bonusGold;
+          this.overdriveTimer = 8.0;
+          sound.playCoin();
+          this.floatingTexts.push(new FloatingText(LOGICAL_W * 0.5, LOGICAL_H * 0.4, `GOLDEN OVERDRIVE! +${bonusGold} KOIN & +60% SPD!`, '#fde047', 18));
+          for (let i = 0; i < 40; i++) {
+            this.particles.push(new Particle(
+              Math.random() * LOGICAL_W,
+              -10 - Math.random() * 120,
+              (Math.random() - 0.5) * 40,
+              180 + Math.random() * 140,
+              5,
+              '#facc15',
+              1.1,
+              120
+            ));
+          }
+          this.updateHUD();
+          this.updateTowerDockUI();
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // WAVE CLEAR RANDOM BUFF CARD MODAL
+      // --------------------------------------------------------------------------
+      openBuffCardModal() {
+        this.waitingForBuffChoice = true;
+        this.rerollAvailable = true;
+        const rerollBtn = document.getElementById('btn-reroll-buffs');
+        rerollBtn.disabled = false;
+        rerollBtn.textContent = '🎲 Acak Ulang Kartu (1x)';
+
+        this.renderBuffCards();
+        document.getElementById('buff-modal').classList.remove('hidden');
+      }
+
+      renderBuffCards() {
+        const container = document.getElementById('buff-cards-container');
+        container.innerHTML = '';
+
+        // Pick 3 unique random buffs weighted by rarity
+        const poolCopy = [...BUFF_POOL];
+        const chosen = [];
+        while (chosen.length < 3 && poolCopy.length > 0) {
+          const idx = Math.floor(Math.random() * poolCopy.length);
+          chosen.push(poolCopy.splice(idx, 1)[0]);
+        }
+
+        const rerollBtn = document.getElementById('btn-reroll-buffs');
+        rerollBtn.disabled = !this.rerollAvailable;
+        if (!this.rerollAvailable) {
+          rerollBtn.textContent = '🎲 Acak Ulang Habis';
+        }
+
+        chosen.forEach((cardData) => {
+          const st = RARITY_STYLES[cardData.rarity] || RARITY_STYLES.Common;
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = `buff-card rounded-2xl bg-gradient-to-b ${st.bg} border-2 ${st.border} p-4 flex flex-col items-center justify-between text-center cursor-pointer shadow-xl`;
+          card.innerHTML = `
+            <span class="px-2.5 py-0.5 rounded-full border text-[11px] font-extrabold uppercase tracking-wider ${st.badge}">
+              ${cardData.rarity}
+            </span>
+            <div class="w-14 h-14 my-3 rounded-2xl bg-slate-950/70 border border-white/15 flex items-center justify-center text-3xl shadow-inner">
+              ${cardData.icon}
+            </div>
+            <div>
+              <h3 class="font-display font-bold text-base sm:text-lg text-white mb-1">${cardData.name}</h3>
+              <p class="text-xs text-slate-200 font-semibold leading-snug">${cardData.desc}</p>
+            </div>
+            <div class="mt-3 w-full py-1.5 rounded-xl bg-white/10 text-amber-300 font-display font-bold text-xs">
+              Pilih Berkah Ini
+            </div>
+          `;
+          card.addEventListener('click', () => {
+            sound.unlock();
+            sound.playUpgrade();
+            cardData.apply(this.buffs, this);
+            this.buffs.list.push(cardData);
+            document.getElementById('buff-modal').classList.add('hidden');
+            this.waitingForBuffChoice = false;
+            this.wave++;
+            this.updateHUD();
+            this.updateTowerDockUI();
+            this.updateInspector();
+
+            if (this.autoWave) {
+              this.autoWaveCountdown = 1.4;
+            }
+          });
+          container.appendChild(card);
+        });
+      }
+
+      // --------------------------------------------------------------------------
+      // BUILD & INSPECTOR LOGIC
+      // --------------------------------------------------------------------------
+      selectBuildTower(typeId) {
+        if (!meta.isUnlocked(typeId)) return;
+        if (this.buildTowerType === typeId) {
+          this.cancelBuild();
+          return;
+        }
+        const cfg = TOWER_TYPES[typeId];
+        if (this.gold < cfg.cost) {
+          this.showToast(`Koin tidak cukup untuk ${cfg.name} (${cfg.cost} Koin)!`);
+          return;
+        }
+        this.buildTowerType = typeId;
+        this.selectedTower = null;
+        this.updateInspector();
+        this.updateTowerDockUI();
+      }
+
+      cancelBuild() {
+        this.buildTowerType = null;
+        this.updateTowerDockUI();
+      }
+
+      updateTowerDockUI() {
+        Object.values(TOWER_TYPES).forEach((t) => {
+          const card = document.getElementById(`tower-card-${t.id}`);
+          if (!card) return;
+          const isSel = this.buildTowerType === t.id;
+          card.classList.toggle('selected', isSel);
+          card.classList.toggle('opacity-55', this.gold < t.cost && !isSel);
+        });
+
+        const cancelBtn = document.getElementById('btn-cancel-build');
+        const hint = document.getElementById('dock-hint');
+        if (this.buildTowerType) {
+          const t = TOWER_TYPES[this.buildTowerType];
+          cancelBtn.classList.remove('hidden');
+          hint.innerHTML = `<span class="text-amber-300 font-bold">Membangun ${t.name}:</span> ${t.specialText}`;
+        } else {
+          cancelBtn.classList.add('hidden');
+          hint.textContent = 'Pilih menara slime atau tekan [1-4] untuk Elemental Burst!';
+        }
+      }
+
+      handleCanvasTap(c, r) {
+        if (this.isGameOver || this.waitingForBuffChoice) return;
+
+        if (this.buildTowerType) {
+          const cfg = TOWER_TYPES[this.buildTowerType];
+          if (this.grid[r][c] !== 'empty') {
+            this.showToast('Tidak bisa membangun di atas jalur atau rintangan!');
+            return;
+          }
+          if (this.gold < cfg.cost) {
+            this.showToast('Koin tidak cukup!');
+            return;
+          }
+
+          this.gold -= cfg.cost;
+          this.grid[r][c] = 'tower';
+          const tower = new Tower(this.buildTowerType, c, r);
+          this.towers.push(tower);
+          this.towersBuilt++;
+          sound.playBuild();
+
+          for (let i = 0; i < 14; i++) {
+            const ang = (i / 14) * Math.PI * 2;
+            this.particles.push(new Particle(tower.x, tower.y + 12, Math.cos(ang) * 60, Math.sin(ang) * 35, 4.5, '#e2e8f0', 0.35));
+          }
+
+          if (this.gold < cfg.cost) {
+            this.buildTowerType = null;
+          }
+          this.updateTowerDockUI();
+          this.updateHUD();
+          return;
+        }
+
+        const clickedTower = this.towers.find((t) => t.col === c && t.row === r);
+        if (clickedTower) {
+          sound.playCoin();
+          this.selectedTower = clickedTower;
+          this.updateInspector();
+        } else {
+          this.selectedTower = null;
+          this.updateInspector();
+        }
+      }
+
+      updateInspector() {
+        const panel = document.getElementById('tower-inspector');
+        if (!this.selectedTower) {
+          panel.classList.add('hidden');
+          return;
+        }
+        panel.classList.remove('hidden');
+
+        const t = this.selectedTower;
+        const stats = t.getStats();
+        const next = t.getNextStats();
+
+        document.getElementById('insp-icon').textContent = t.cfg.emoji;
+        document.getElementById('insp-name').textContent = t.cfg.name;
+        document.getElementById('insp-level').textContent = `Lv. ${t.level}`;
+        document.getElementById('insp-role').textContent = t.cfg.role;
+        document.getElementById('insp-kills').textContent = `${t.kills} slime`;
+
+        const stunAlert = document.getElementById('insp-stun-alert');
+        if (t.stunTimer > 0) {
+          stunAlert.classList.remove('hidden');
+          stunAlert.textContent = `💫 Terkena Stun Bos (${t.stunTimer.toFixed(1)}s)`;
+        } else {
+          stunAlert.classList.add('hidden');
+        }
+
+        const effDmg = Math.round(stats.dmg * this.buffs.dmgMult);
+        const nextDmg = next ? Math.round(next.dmg * this.buffs.dmgMult) : null;
+        document.getElementById('insp-dmg').innerHTML = next
+          ? `${effDmg} <span class="text-amber-300">→ ${nextDmg}</span>`
+          : `${effDmg} <span class="text-amber-300">(MAKS)</span>`;
+
+        const effSpd = (stats.fireRate * this.buffs.spdMult).toFixed(2);
+        const nextSpd = next ? (next.fireRate * this.buffs.spdMult).toFixed(2) : null;
+        document.getElementById('insp-spd').innerHTML = next
+          ? `${effSpd}/dtk <span class="text-amber-300">→ ${nextSpd}</span>`
+          : `${effSpd}/dtk`;
+
+        const effRng = (stats.range * this.buffs.rngMult).toFixed(1);
+        const nextRng = next ? (next.range * this.buffs.rngMult).toFixed(1) : null;
+        document.getElementById('insp-rng').innerHTML = next
+          ? `${effRng} <span class="text-amber-300">→ ${nextRng}</span>`
+          : `${effRng} petak`;
+
+        document.getElementById('insp-special').textContent = t.cfg.specialText;
+
+        const modeLabels = {
+          first: '🎯 Pertama',
+          strongest: '💪 Terkuat',
+          closest: '📍 Terdekat'
+        };
+        document.getElementById('btn-target-mode').textContent = modeLabels[t.targetMode];
+
+        const upgBtn = document.getElementById('btn-upgrade-tower');
+        const upgCostEl = document.getElementById('insp-upgrade-cost');
+        if (t.level >= 4) {
+          upgBtn.disabled = true;
+          upgCostEl.textContent = 'LEVEL MAKS';
+        } else {
+          upgBtn.disabled = this.gold < stats.upgradeCost;
+          upgCostEl.textContent = `🪙 ${stats.upgradeCost} Koin`;
+        }
+
+        document.getElementById('insp-sell-value').textContent = `+${t.getSellValue()} 🪙`;
+      }
+
+      triggerNextWave() {
+        if (this.isGameOver || this.waitingForBuffChoice) return;
+
+        if (this.waveActive && this.spawnQueue.length > 0) {
+          this.showToast('Gelombang saat ini masih muncul!');
+          return;
+        }
+
+        if (this.waveActive && this.spawnQueue.length === 0) {
+          const bonus = 18;
+          this.gold += bonus;
+          this.score += bonus * 2;
+          sound.playCoin();
+          this.floatingTexts.push(new FloatingText(LOGICAL_W * 0.5, 65, `Bonus Gelombang Cepat +${bonus} Koin!`, '#fde047', 16));
+          this.wave++;
+        }
+
+        const waveData = getWaveData(this.wave);
+        this.waveActive = true;
+        this.autoWaveCountdown = 0;
+
+        this.spawnQueue = [];
+        for (const grp of waveData.groups) {
+          for (let i = 0; i < grp.count; i++) {
+            this.spawnQueue.push({
+              type: grp.type,
+              delay: i === 0 ? 0.35 : grp.interval
+            });
+          }
+        }
+        this.spawnTimer = 0.2;
+
+        sound.playWaveStart(!!waveData.boss);
+        this.showBanner(waveData.title, waveData.sub, !!waveData.boss);
+        this.updateHUD();
+      }
+
+      onEnemyKilled(enemy) {
+        sound.playPop(enemy.isBoss);
+        const coinEarned = Math.round(enemy.reward * this.buffs.goldMult);
+        this.gold += coinEarned;
+        this.score += enemy.score;
+        this.kills++;
+
+        this.floatingTexts.push(new FloatingText(enemy.x, enemy.y - 12, `+${coinEarned} 🪙`, '#fde047', enemy.isBoss ? 18 : 13));
+
+        const count = enemy.isBoss ? 36 : 12;
+        for (let i = 0; i < count; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = 35 + Math.random() * (enemy.isBoss ? 175 : 95);
+          this.particles.push(new Particle(
+            enemy.x,
+            enemy.y,
+            Math.cos(ang) * spd,
+            Math.sin(ang) * spd - 20,
+            enemy.isBoss ? 6 : 4,
+            i % 2 === 0 ? enemy.cfg.color : enemy.cfg.lightColor,
+            0.55,
+            180
+          ));
+        }
+
+        // Splitting enemies & Bosses
+        if (enemy.cfg.splitsInto) {
+          const splitCount = enemy.isBoss ? 3 : 2;
+          if (enemy.isBoss) {
+            this.triggerShake(9, 0.35);
+            this.shockwaves.push(new ShockwaveRing(enemy.x, enemy.y, 120, '#fb7185', 0.5));
+            this.floatingTexts.push(new FloatingText(enemy.x, enemy.y - 34, 'BOS TERBELAH!', '#fda4af', 16));
+          } else {
+            this.floatingTexts.push(new FloatingText(enemy.x, enemy.y - 26, 'TERBELAH!', '#fde047', 12));
+          }
+          const hpMult = this.getWaveHpMultiplier();
+          for (let s = 0; s < splitCount; s++) {
+            const offset = Math.max(0, enemy.segmentDist - (s - 1) * 24);
+            const minion = new Enemy(enemy.cfg.splitsInto, enemy.waypoints, hpMult * 0.85, enemy.segmentIndex, offset);
+            this.enemies.push(minion);
+          }
+        }
+
+        this.updateTowerDockUI();
+        this.updateInspector();
+        this.updateHUD();
+      }
+
+      getWaveHpMultiplier() {
+        // Challenging scaling curve
+        const waveScale = 1 + (this.wave - 1) * 0.22 + Math.pow(Math.max(0, this.wave - 6), 1.38) * 0.09;
+        return this.map.hpMult * waveScale;
+      }
+
+      triggerShake(intensity, duration) {
+        this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+        this.shakeTime = Math.max(this.shakeTime, duration);
+      }
+
+      showBanner(title, sub, isBoss = false) {
+        const banner = document.getElementById('wave-banner');
+        const titleEl = document.getElementById('wave-banner-title');
+        const subEl = document.getElementById('wave-banner-sub');
+
+        titleEl.textContent = title;
+        subEl.textContent = sub;
+        banner.className = `pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-2xl bg-slate-900/95 border-2 ${isBoss ? 'border-rose-500 shadow-rose-950/60' : 'border-amber-400/80'} shadow-xl text-center animate-pop-in`;
+        titleEl.className = `font-display font-bold text-sm sm:text-lg ${isBoss ? 'text-rose-400' : 'text-amber-300'}`;
+
+        clearTimeout(this.bannerTimeout);
+        this.bannerTimeout = setTimeout(() => {
+          banner.classList.add('hidden');
+        }, 3200);
+      }
+
+      showToast(msg) {
+        const toast = document.getElementById('toast-msg');
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 2100);
+      }
+
+      updateHUD() {
+        document.getElementById('hud-lives').textContent = Math.max(0, this.lives);
+        document.getElementById('hud-gold').textContent = this.gold;
+        document.getElementById('hud-score').textContent = this.score;
+        document.getElementById('hud-buffs-count').textContent = this.buffs.list.length;
+
+        const waveLabel = this.wave <= TOTAL_WAVES ? `${this.wave} / ${TOTAL_WAVES}` : `${this.wave} (∞)`;
+        document.getElementById('hud-wave').textContent = waveLabel;
+
+        const nextBtn = document.getElementById('btn-next-wave');
+        const nextBtnText = document.getElementById('btn-next-wave-text');
+        if (!this.waveActive) {
+          nextBtn.disabled = false;
+          nextBtnText.textContent = `Mulai Gel. ${this.wave}`;
+        } else if (this.spawnQueue.length === 0) {
+          nextBtn.disabled = false;
+          nextBtnText.textContent = `Gel. ${this.wave + 1} (+18🪙)`;
+        } else {
+          nextBtn.disabled = true;
+          nextBtnText.textContent = `Gelombang ${this.wave}...`;
+        }
+
+        const autoDot = document.getElementById('auto-wave-dot');
+        const autoBtn = document.getElementById('btn-auto-wave');
+        if (this.autoWave) {
+          autoDot.className = 'w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400';
+          autoBtn.classList.add('border-emerald-400/70', 'text-emerald-300');
+        } else {
+          autoDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+          autoBtn.classList.remove('border-emerald-400/70', 'text-emerald-300');
+        }
+
+        // Update Skill Cooldown UI overlays
+        Object.values(ACTIVE_SKILLS).forEach((sk) => {
+          const cd = this.skillCooldowns[sk.id];
+          const overlay = document.getElementById(`skill-cd-overlay-${sk.id}`);
+          const btn = document.getElementById(`skill-btn-${sk.id}`);
+          if (!overlay || !btn) return;
+          if (cd > 0) {
+            overlay.classList.remove('hidden');
+            overlay.textContent = `${Math.ceil(cd)}s`;
+            btn.disabled = true;
+          } else {
+            overlay.classList.add('hidden');
+            btn.disabled = false;
+          }
+        });
+
+        // Golden Overdrive active badge
+        const odBadge = document.getElementById('overdrive-badge');
+        if (this.overdriveTimer > 0) {
+          odBadge.classList.remove('hidden');
+          document.getElementById('overdrive-timer').textContent = `${this.overdriveTimer.toFixed(1)}s`;
+        } else {
+          odBadge.classList.add('hidden');
+        }
+      }
+
+      endGame(isVictory) {
+        this.isGameOver = true;
+        this.isRunning = false;
+
+        const mainReward = this.map.essenceReward; // 100 (Easy), 200 (Medium), 300 (Hard)
+        let essenceEarned = 0;
+        let formulaText = '';
+
+        if (isVictory) {
+          essenceEarned = mainReward;
+          formulaText = `100% Hadiah Utama Peta ${this.map.difficulty} (Wave ${TOTAL_WAVES}/${TOTAL_WAVES} Selesai)`;
+        } else {
+          // Partial Slime Essence reward based on wave reached
+          const waveReached = Math.min(TOTAL_WAVES, Math.max(1, this.wave));
+          if (this.victoryReached) {
+            // Lost in Endless mode after beating Wave 15
+            const endlessBonus = Math.max(0, this.wave - TOTAL_WAVES) * 15;
+            essenceEarned = mainReward + endlessBonus;
+            formulaText = `Hadiah Utama (${mainReward}) + Bonus Endless (${endlessBonus})`;
+          } else {
+            essenceEarned = Math.max(5, Math.floor(mainReward * (waveReached / TOTAL_WAVES) * 0.6));
+            formulaText = `Hadiah Utama (${mainReward}) × (Wave ${waveReached}/${TOTAL_WAVES}) × 60%`;
+          }
+        }
+
+        meta.addEssence(essenceEarned);
+
+        const modal = document.getElementById('end-modal');
+        const emoji = document.getElementById('end-emoji');
+        const title = document.getElementById('end-title');
+        const sub = document.getElementById('end-subtitle');
+        const endlessBtn = document.getElementById('btn-endless');
+
+        if (isVictory) {
+          sound.playVictory();
+          emoji.textContent = '👑';
+          title.textContent = 'Kemenangan Kerajaan Gel!';
+          title.className = 'font-display font-bold text-2xl sm:text-3xl text-amber-300 mb-1';
+          sub.textContent = `Luar biasa! Kamu menaklukkan ${this.map.name} (${this.map.difficulty})!`;
+          endlessBtn.classList.remove('hidden');
+        } else {
+          sound.playDefeat();
+          emoji.textContent = '💔';
+          title.textContent = 'Inti Kristal Telah Retak!';
+          title.className = 'font-display font-bold text-2xl sm:text-3xl text-rose-400 mb-1';
+          sub.textContent = 'Pertahanan jebol, namun kamu tetap memperoleh Slime Essence dari perjuanganmu!';
+          endlessBtn.classList.add('hidden');
+        }
+
+        document.getElementById('end-essence-earned').textContent = `+${essenceEarned} 🔮`;
+        document.getElementById('end-essence-formula').textContent = formulaText;
+        document.getElementById('end-essence-total').textContent = `Total Slime Essence Tersimpan: ${meta.essence} 🔮`;
+
+        document.getElementById('stat-waves').textContent = isVictory ? `${TOTAL_WAVES} / ${TOTAL_WAVES}` : `${this.wave}`;
+        document.getElementById('stat-kills').textContent = this.kills;
+        document.getElementById('stat-towers').textContent = this.towersBuilt;
+        document.getElementById('stat-score').textContent = this.score;
+
+        modal.classList.remove('hidden');
+      }
+
+      // --------------------------------------------------------------------------
+      // MAIN SIMULATION LOOP
+      // --------------------------------------------------------------------------
+      loop(now) {
+        const rawDt = Math.min(0.05, (now - this.lastFrameTime) / 1000);
+        this.lastFrameTime = now;
+
+        if (this.isRunning && !this.isGameOver && !this.waitingForBuffChoice) {
+          // Handle Genshin Burst Cut-In slow-motion drama
+          if (this.burstCutin) {
+            this.burstCutin.timer -= rawDt;
+            if (!this.burstCutin.executed && this.burstCutin.timer <= 0.45) {
+              this.burstCutin.executed = true;
+              this.executeSkillEffect(this.burstCutin.skillId);
+            }
+            if (this.burstCutin.timer <= 0) {
+              this.burstCutin = null;
+            }
+            // Bullet-time simulation during cut-in
+            this.update(rawDt * 0.1, rawDt);
+          } else if (this.gameSpeed > 0) {
+            const dt = rawDt * this.gameSpeed;
+            this.update(dt, rawDt);
+          }
+        }
+
+        if (!document.getElementById('game-screen').classList.contains('hidden')) {
+          this.render();
+        }
+
+        requestAnimationFrame((t) => this.loop(t));
+      }
+
+      update(dt, rawDt) {
+        this.time += dt;
+        this.corePulse += dt * 3.5;
+
+        if (this.shakeTime > 0) {
+          this.shakeTime = Math.max(0, this.shakeTime - rawDt);
+        }
+
+        // Skill Cooldowns & Golden Overdrive timer
+        let hudDirty = false;
+        for (const key of Object.keys(this.skillCooldowns)) {
+          if (this.skillCooldowns[key] > 0) {
+            this.skillCooldowns[key] = Math.max(0, this.skillCooldowns[key] - dt);
+            hudDirty = true;
+          }
+        }
+        if (this.overdriveTimer > 0) {
+          this.overdriveTimer = Math.max(0, this.overdriveTimer - dt);
+          hudDirty = true;
+        }
+        if (hudDirty) this.updateHUD();
+
+        // Process Pending Meteor Strikes
+        for (let i = this.pendingMeteors.length - 1; i >= 0; i--) {
+          const m = this.pendingMeteors[i];
+          m.delay -= dt;
+          if (m.delay <= 0) {
+            this.pendingMeteors.splice(i, 1);
+            sound.playExplosion();
+            this.triggerShake(5, 0.16);
+            const blastRad = 1.65 * TILE_SIZE * this.buffs.aoeMult;
+            const meteorDmg = (180 + this.wave * 32) * this.buffs.dmgMult;
+            this.shockwaves.push(new ShockwaveRing(m.x, m.y, blastRad, '#f97316', 0.4));
+            for (let p = 0; p < 20; p++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = 45 + Math.random() * 140;
+              this.particles.push(new Particle(m.x, m.y, Math.cos(ang) * spd, Math.sin(ang) * spd, 4.5 + Math.random() * 3, p % 2 === 0 ? '#f97316' : '#fde047', 0.5));
+            }
+            for (let j = this.enemies.length - 1; j >= 0; j--) {
+              const e = this.enemies[j];
+              if (!e.dead && dist(m.x, m.y, e.x, e.y) <= blastRad + e.radius) {
+                e.takeDamage(meteorDmg, null);
+                e.applyBurn(30 + this.wave * 5, 3.5, null);
+                if (e.dead) {
+                  this.onEnemyKilled(e);
+                  this.enemies.splice(j, 1);
+                }
+              }
+            }
+          }
+        }
+
+        // Spawn Enemies from Queue
+        if (this.waveActive && this.spawnQueue.length > 0) {
+          this.spawnTimer -= dt;
+          if (this.spawnTimer <= 0) {
+            const nextSpawn = this.spawnQueue.shift();
+            const pathChoice = this.waypointPaths[this.nextPathToggle % this.waypointPaths.length];
+            this.nextPathToggle++;
+
+            const enemy = new Enemy(nextSpawn.type, pathChoice, this.getWaveHpMultiplier());
+            this.enemies.push(enemy);
+            this.particles.push(new Particle(enemy.x, enemy.y, 0, -15, 10, '#c084fc', 0.35));
+
+            this.spawnTimer = this.spawnQueue.length > 0 ? this.spawnQueue[0].delay : 0;
+            if (this.spawnQueue.length === 0) {
+              this.updateHUD();
+            }
+          }
+        }
+
+        // Update Gravity Vortices
+        for (let i = this.vortices.length - 1; i >= 0; i--) {
+          this.vortices[i].update(dt, this);
+          if (this.vortices[i].life <= 0) {
+            this.vortices.splice(i, 1);
+          }
+        }
+
+        // Update Towers
+        for (const tower of this.towers) {
+          tower.update(dt, this);
+        }
+        if (this.selectedTower && this.selectedTower.stunTimer > 0) {
+          this.updateInspector();
+        }
+
+        // Update Projectiles
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+          const p = this.projectiles[i];
+          p.update(dt, this);
+          if (p.dead) {
+            this.projectiles.splice(i, 1);
+          }
+        }
+
+        // Update Enemies
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+          const e = this.enemies[i];
+          e.update(dt, this);
+
+          if (e.dead) {
+            this.enemies.splice(i, 1);
+            continue;
+          }
+
+          if (e.reachedCore) {
+            this.enemies.splice(i, 1);
+            const lifeLoss = e.isBoss ? 5 : 1;
+            this.lives = Math.max(0, this.lives - lifeLoss);
+            sound.playLifeLost();
+            this.triggerShake(7, 0.28);
+            this.floatingTexts.push(new FloatingText(e.x - 16, e.y - 20, `-${lifeLoss} ❤️`, '#fb7185', 16));
+            this.updateHUD();
+
+            if (this.lives <= 0) {
+              this.endGame(false);
+              return;
+            }
+          }
+        }
+
+        // Check Wave Completion
+        if (this.waveActive && this.spawnQueue.length === 0 && this.enemies.length === 0 && this.pendingMeteors.length === 0) {
+          this.waveActive = false;
+          const clearBonus = 22 + this.wave * 4 + this.buffs.waveGoldBonus;
+          this.gold += clearBonus;
+          this.score += clearBonus * 3;
+          sound.playCoin();
+          this.floatingTexts.push(new FloatingText(LOGICAL_W * 0.5, LOGICAL_H * 0.45, `Gelombang Selesai! +${clearBonus} 🪙`, '#4ade80', 18));
+
+          if (this.wave === TOTAL_WAVES && !this.victoryReached) {
+            this.victoryReached = true;
+            this.updateHUD();
+            this.endGame(true);
+            return;
+          }
+
+          // Open Random Buff Card Selection Modal after every wave!
+          this.updateHUD();
+          this.openBuffCardModal();
+          return;
+        }
+
+        // Auto-wave countdown
+        if (!this.waveActive && this.autoWave && !this.isGameOver && !this.waitingForBuffChoice) {
+          this.autoWaveCountdown -= dt;
+          if (this.autoWaveCountdown <= 0) {
+            this.triggerNextWave();
+          }
+        }
+
+        // Update Visual Effects
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+          this.particles[i].update(dt);
+          if (this.particles[i].life <= 0) this.particles.splice(i, 1);
+        }
+        for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+          this.shockwaves[i].update(dt);
+          if (this.shockwaves[i].life <= 0) this.shockwaves.splice(i, 1);
+        }
+        for (let i = this.lightningArcs.length - 1; i >= 0; i--) {
+          this.lightningArcs[i].update(dt);
+          if (this.lightningArcs[i].life <= 0) this.lightningArcs.splice(i, 1);
+        }
+        for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+          this.floatingTexts[i].update(dt);
+          if (this.floatingTexts[i].life <= 0) this.floatingTexts.splice(i, 1);
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // RENDERING PIPELINE + GENSHIN BURST CUT-IN + DEVELOPER WATERMARK
+      // --------------------------------------------------------------------------
+      render() {
+        const ctx = this.ctx;
+        ctx.save();
+
+        if (this.shakeTime > 0) {
+          const sx = (Math.random() - 0.5) * this.shakeIntensity * 2;
+          const sy = (Math.random() - 0.5) * this.shakeIntensity * 2;
+          ctx.translate(sx, sy);
+        }
+
+        this.drawTerrain(ctx);
+        this.drawPathways(ctx);
+        this.drawPortalsAndCore(ctx);
+        this.drawProps(ctx);
+        this.drawPlacementPreview(ctx);
+
+        for (const v of this.vortices) v.draw(ctx, this.time);
+
+        for (const t of this.towers) {
+          t.draw(ctx, this.time, t === this.selectedTower, this);
+        }
+
+        const sortedEnemies = [...this.enemies].sort((a, b) => a.y - b.y);
+        for (const e of sortedEnemies) {
+          e.draw(ctx, this.time);
+        }
+
+        for (const p of this.projectiles) p.draw(ctx);
+        for (const arc of this.lightningArcs) arc.draw(ctx);
+        for (const sw of this.shockwaves) sw.draw(ctx);
+        for (const pt of this.particles) pt.draw(ctx);
+        for (const ft of this.floatingTexts) ft.draw(ctx);
+
+        ctx.restore();
+
+        // Render Genshin Impact Elemental Burst Cut-In Overlay if active!
+        if (this.burstCutin) {
+          this.drawGenshinBurstOverlay(ctx, this.burstCutin);
+        }
+
+        // Crisp Canvas Watermark in Bottom-Right Corner
+        ctx.save();
+        ctx.font = '800 13px Nunito, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
+        ctx.beginPath();
+        ctx.roundRect(LOGICAL_W - 142, LOGICAL_H - 28, 132, 20, 8);
+        ctx.fill();
+        ctx.fillStyle = '#a7f3d0';
+        ctx.fillText('Developer: Ilham', LOGICAL_W - 16, LOGICAL_H - 14);
+        ctx.restore();
+      }
+
+      // Dramatic Genshin Impact Elemental Burst Cut-In Animation
+      drawGenshinBurstOverlay(ctx, cutin) {
+        const sk = ACTIVE_SKILLS[cutin.skillId];
+        const progress = 1 - cutin.timer / cutin.maxTimer; // 0 -> 1
+
+        // Ease-in-out alpha & slide-in curve
+        const fade = progress < 0.15 ? progress / 0.15 : progress > 0.8 ? (1 - progress) / 0.2 : 1;
+        const slideOffset = progress < 0.22 ? Math.pow(1 - progress / 0.22, 3) * 420 : 0;
+
+        ctx.save();
+
+        // 1. Dark Dramatic Vignette Backdrop
+        ctx.fillStyle = `rgba(5, 8, 18, ${0.76 * fade})`;
+        ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+        // 2. Diagonal Anime Slash Banner
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(0, LOGICAL_H * 0.22);
+        ctx.lineTo(LOGICAL_W, LOGICAL_H * 0.08);
+        ctx.lineTo(LOGICAL_W, LOGICAL_H * 0.78);
+        ctx.lineTo(0, LOGICAL_H * 0.92);
+        ctx.closePath();
+        ctx.clip();
+
+        const bannerGrad = ctx.createLinearGradient(0, 0, LOGICAL_W, LOGICAL_H);
+        bannerGrad.addColorStop(0, sk.darkBg);
+        bannerGrad.addColorStop(0.5, sk.primaryColor + 'cc');
+        bannerGrad.addColorStop(1, '#090d16');
+        ctx.globalAlpha = 0.94 * fade;
+        ctx.fillStyle = bannerGrad;
+        ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+        // 3. High-Speed Anime Speedlines
+        ctx.strokeStyle = sk.secondaryColor;
+        for (let i = 0; i < 36; i++) {
+          const ly = (i / 36) * LOGICAL_H;
+          const speedShift = ((this.lastFrameTime * 2.4 + i * 97) % LOGICAL_W);
+          ctx.globalAlpha = (0.15 + (i % 4) * 0.08) * fade;
+          ctx.lineWidth = 1.5 + (i % 3);
+          ctx.beginPath();
+          ctx.moveTo(LOGICAL_W - speedShift, ly + 40);
+          ctx.lineTo(LOGICAL_W - speedShift - 240, ly + 72);
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        // Glowing Diagonal Slash Borders
+        ctx.save();
+        ctx.globalAlpha = fade;
+        ctx.strokeStyle = sk.secondaryColor;
+        ctx.shadowColor = sk.primaryColor;
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(0, LOGICAL_H * 0.22);
+        ctx.lineTo(LOGICAL_W, LOGICAL_H * 0.08);
+        ctx.moveTo(0, LOGICAL_H * 0.92);
+        ctx.lineTo(LOGICAL_W, LOGICAL_H * 0.78);
+        ctx.stroke();
+        ctx.restore();
+
+        // 4. Heroic Slime Archon Character Cut-In Portrait (Left-Center)
+        ctx.save();
+        ctx.globalAlpha = fade;
+        drawBurstArchonPortrait(ctx, cutin.skillId, LOGICAL_W * 0.28 - slideOffset, LOGICAL_H * 0.52, 1.35, this.lastFrameTime * 0.002);
+        ctx.restore();
+
+        // 5. Bold Elemental Burst Typography (Right Side)
+        ctx.save();
+        ctx.globalAlpha = fade;
+        const textX = LOGICAL_W * 0.46 + slideOffset * 0.8;
+        const textY = LOGICAL_H * 0.44;
+
+        // Element Tag Pill
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.strokeStyle = sk.secondaryColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(textX, textY - 68, 250, 30, 15);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '900 14px Nunito, sans-serif';
+        ctx.fillStyle = sk.secondaryColor;
+        ctx.textAlign = 'left';
+        ctx.fillText(`✦ ${sk.elementLabel} • ${sk.archonName}`, textX + 14, textY - 48);
+
+        // Sub-header
+        ctx.font = '700 22px Fredoka, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText('ELEMENTAL BURST:', textX, textY - 6);
+
+        // Giant Skill Title with Dramatic Outline & Glow
+        ctx.font = '700 50px Fredoka, sans-serif';
+        ctx.strokeStyle = '#090d16';
+        ctx.lineWidth = 10;
+        ctx.strokeText(sk.burstTitle, textX, textY + 48);
+
+        ctx.shadowColor = sk.primaryColor;
+        ctx.shadowBlur = 22;
+        ctx.fillStyle = sk.secondaryColor;
+        ctx.fillText(sk.burstTitle, textX, textY + 48);
+        ctx.restore();
+
+        // White Flash at impact moment
+        if (progress > 0.56 && progress < 0.72) {
+          const flashAlpha = 1 - Math.abs(progress - 0.64) / 0.08;
+          ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha * 0.45})`;
+          ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+        }
+
+        ctx.restore();
+      }
+
+      drawTerrain(ctx) {
+        const { bg1, bg2 } = this.map.theme;
+        for (let r = 0; r < GRID_ROWS; r++) {
+          for (let c = 0; c < GRID_COLS; c++) {
+            ctx.fillStyle = (r + c) % 2 === 0 ? bg1 : bg2;
+            ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+          }
+        }
+      }
+
+      drawPathways(ctx) {
+        const { pathFill, pathBorder, pathPebble } = this.map.theme;
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.strokeStyle = pathBorder;
+        ctx.lineWidth = TILE_SIZE * 0.84;
+        for (const wp of this.waypointPaths) {
+          ctx.beginPath();
+          wp.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = pathFill;
+        ctx.lineWidth = TILE_SIZE * 0.7;
+        for (const wp of this.waypointPaths) {
+          ctx.beginPath();
+          wp.forEach((p, idx) => (idx === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+          ctx.stroke();
+        }
+
+        const flowOffset = (this.time * 24) % 24;
+        for (const arr of this.pathArrows) {
+          const center = tileCenter(arr.c, arr.r);
+          ctx.save();
+          ctx.translate(center.x, center.y);
+          ctx.rotate(arr.angle);
+
+          ctx.fillStyle = pathPebble;
+          ctx.beginPath();
+          ctx.arc(-14, 14, 3.5, 0, Math.PI * 2);
+          ctx.arc(16, -15, 2.8, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = 2.5;
+          const shift = flowOffset - 12;
+          ctx.beginPath();
+          ctx.moveTo(shift - 5, -6);
+          ctx.lineTo(shift + 3, 0);
+          ctx.lineTo(shift - 5, 6);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      drawPortalsAndCore(ctx) {
+        const drawnStarts = new Set();
+        for (const wp of this.waypointPaths) {
+          const start = wp[0];
+          const key = `${start.x},${start.y}`;
+          if (drawnStarts.has(key)) continue;
+          drawnStarts.add(key);
+
+          ctx.save();
+          ctx.translate(start.x, start.y);
+          ctx.rotate(this.time * 2.2);
+          const grad = ctx.createRadialGradient(0, 0, 4, 0, 0, 28);
+          grad.addColorStop(0, '#f0abfc');
+          grad.addColorStop(0.55, '#9333ea');
+          grad.addColorStop(1, 'rgba(88, 28, 135, 0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, 28, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = '#fae8ff';
+          ctx.lineWidth = 2.5;
+          for (let i = 0; i < 3; i++) {
+            ctx.rotate((Math.PI * 2) / 3);
+            ctx.beginPath();
+            ctx.arc(6, 0, 10, 0, Math.PI * 1.1);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+
+        const end = this.waypointPaths[0][this.waypointPaths[0].length - 1];
+        const pulse = 1 + Math.sin(this.corePulse) * 0.08;
+
+        ctx.save();
+        ctx.translate(end.x, end.y);
+
+        const aura = ctx.createRadialGradient(0, 0, 5, 0, 0, 38 * pulse);
+        aura.addColorStop(0, 'rgba(103, 232, 249, 0.85)');
+        aura.addColorStop(0.6, 'rgba(6, 182, 212, 0.3)');
+        aura.addColorStop(1, 'rgba(6, 182, 212, 0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, 0, 38 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#334155';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 14, 22, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        const bob = Math.sin(this.corePulse * 1.2) * 3;
+        ctx.translate(0, -4 + bob);
+        ctx.fillStyle = '#22d3ee';
+        ctx.strokeStyle = '#ecfeff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -22);
+        ctx.lineTo(15, -4);
+        ctx.lineTo(0, 16);
+        ctx.lineTo(-15, -4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#a5f3fc';
+        ctx.beginPath();
+        ctx.moveTo(0, -22);
+        ctx.lineTo(6, -4);
+        ctx.lineTo(0, 16);
+        ctx.lineTo(-6, -4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      drawProps(ctx) {
+        const type = this.map.theme.propType;
+        for (const p of this.props) {
+          const { x, y } = tileCenter(p.c, p.r);
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(p.scale, p.scale);
+
+          ctx.fillStyle = 'rgba(0,0,0,0.24)';
+          ctx.beginPath();
+          ctx.ellipse(0, 18, 18, 7, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (type === 'forest') {
+            if (p.variant === 0 || p.variant === 1) {
+              ctx.fillStyle = '#78350f';
+              ctx.fillRect(-4, 4, 8, 14);
+              ctx.fillStyle = '#15803d';
+              ctx.beginPath();
+              ctx.arc(0, -2, 17, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#22c55e';
+              ctx.beginPath();
+              ctx.arc(-4, -6, 12, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              ctx.fillStyle = '#64748b';
+              ctx.beginPath();
+              ctx.arc(0, 8, 13, Math.PI, 0);
+              ctx.fill();
+              ctx.fillStyle = '#fde047';
+              ctx.beginPath();
+              ctx.arc(-10, 12, 3, 0, Math.PI * 2);
+              ctx.arc(11, 10, 3, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else if (type === 'mushroom') {
+            ctx.fillStyle = '#e2e8f0';
+            ctx.fillRect(-4, 2, 8, 15);
+            ctx.fillStyle = p.variant % 2 === 0 ? '#c084fc' : '#2dd4bf';
+            ctx.beginPath();
+            ctx.arc(0, 2, 16, Math.PI, 0);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-6, -5, 3, 0, Math.PI * 2);
+            ctx.arc(5, -7, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = '#1c1917';
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-14, 16);
+            ctx.lineTo(-4, -14);
+            ctx.lineTo(6, -6);
+            ctx.lineTo(14, 16);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+      }
+
+      drawPlacementPreview(ctx) {
+        if (!this.buildTowerType || !this.hoverTile) return;
+        const { c, r } = this.hoverTile;
+        const center = tileCenter(c, r);
+        const isValid = this.grid[r][c] === 'empty';
+        const cfg = TOWER_TYPES[this.buildTowerType];
+        const rangePx = cfg.levels[0].range * TILE_SIZE * this.buffs.rngMult;
+
+        ctx.save();
+
+        ctx.fillStyle = isValid ? 'rgba(74, 222, 128, 0.32)' : 'rgba(244, 63, 94, 0.38)';
+        ctx.strokeStyle = isValid ? '#4ade80' : '#f43f5e';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(c * TILE_SIZE + 4, r * TILE_SIZE + 4, TILE_SIZE - 8, TILE_SIZE - 8, 12);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = isValid ? 'rgba(74, 222, 128, 0.1)' : 'rgba(244, 63, 94, 0.1)';
+        ctx.strokeStyle = isValid ? 'rgba(134, 239, 172, 0.8)' : 'rgba(253, 164, 175, 0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 5]);
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, rangePx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.globalAlpha = 0.75;
+        drawCuteSlime(ctx, {
+          x: center.x,
+          y: center.y + 2,
+          radius: 21,
+          color: cfg.color,
+          darkColor: cfg.darkColor,
+          lightColor: cfg.lightColor,
+          level: 1,
+          towerType: this.buildTowerType,
+          time: this.time
+        });
+
+        ctx.restore();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      window.slimeGame = new Game();
+    });
+  </script>
+</body>
+</html>
